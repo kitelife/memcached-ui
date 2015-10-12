@@ -1,4 +1,4 @@
-package protocol
+package memcached
 
 import (
 	"bytes"
@@ -12,40 +12,47 @@ type Connection struct {
 	Conn *net.TCPConn
 }
 
-func (c *Connection) Send(cmd string) (resp []byte, err error) {
+func (c *Connection) Send(cmd ...string) (resp []byte, err error) {
 	if c.Conn == nil {
-		conn, err := net.DialTCP("tcp", nil, fmt.Sprintf("%s:%d", c.Host, c.Port))
+		targetTCPAddress, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", c.Host, c.Port))
 		if err != nil {
-			return "", err
+			return nil, err
+		}
+		conn, err := net.DialTCP("tcp", nil, targetTCPAddress)
+		if err != nil {
+			return nil, err
 		}
 		err = conn.SetKeepAlive(true)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		c.Conn = conn
 	}
 
 	// 写
-	cmdBytes := []byte(cmd)
-	// cmdLength := len(cmdBytes)
-	_, err := c.Conn.Write(cmdBytes)
-	if err != nil {
-		return "", err
+	for _, cmdPart := range cmd {
+		cmdPartBytes := []byte(cmdPart)
+		// cmdLength := len(cmdBytes)
+		_, err = c.Conn.Write(cmdPartBytes)
+		if err != nil {
+			return nil, err
+		}
 	}
 	// 读
 	var respBuffer bytes.Buffer
 	for {
-		var oneRead []byte
-		readLength, err := c.Conn.Read(oneRead)
-		if err != nil {
-			return respBuffer.Bytes(), err
-		}
-		_, err = respBuffer.Write(oneRead)
-		if err != nil {
-			return respBuffer.Bytes(), err
-		}
-		if readLength < len(oneRead) || readLength == 0 {
+		oneRead := make([]byte, 1024)
+		readLength, readErr := c.Conn.Read(oneRead)
+		_, bufferWriteErr := respBuffer.Write(oneRead)
+		if readLength < len(oneRead) {
 			return respBuffer.Bytes(), nil
+		}
+
+		if readErr != nil {
+			return respBuffer.Bytes(), readErr
+		}
+		if bufferWriteErr != nil {
+			return respBuffer.Bytes(), bufferWriteErr
 		}
 	}
 }
