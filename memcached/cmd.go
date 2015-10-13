@@ -90,7 +90,7 @@ func (m *Memcached) runStorageCmd(cmdName string, args storageCmdArgStruct) erro
 	if ok == false {
 		expTime = "0"
 	} else {
-		expTime = string(expTime.(int))
+		expTime = strconv.Itoa(expTime.(int))
 	}
 	argList := []string{key.(string), flags.(string), expTime.(string), strconv.Itoa(len(value.(string)))}
 	if cmdName == "cas" {
@@ -159,7 +159,7 @@ func (m *Memcached) parseFetchResp(resp []byte) (map[string]string, error) {
 		}
 		itemMetaLine := filteredResp[:lineBreakPosition]
 		metaLineParts := bytes.Split(itemMetaLine, []byte(" "))
-		if len(metaLineParts) != 4 {
+		if len(metaLineParts) < 4 {
 			return nil, NotValidRespError(NOT_VALID_RESP_MSG)
 		}
 		// 目标key
@@ -173,10 +173,11 @@ func (m *Memcached) parseFetchResp(resp []byte) (map[string]string, error) {
 		parsedKV[targetKey] = string(targetValue)
 
 		if dataEndPosition == len(filteredResp) {
-			filteredResp = []byte{}
+			filteredResp = nil
 		} else {
 			filteredResp = filteredResp[dataEndPosition+lineBreakLength:]
 		}
+		fmt.Println(string(filteredResp))
 	}
 	return parsedKV, nil
 }
@@ -323,9 +324,9 @@ func (m *Memcached) Touch(key string, expTime int) error {
 
 func (m *Memcached) parseStatsResp(resp []byte) (map[string]string, error) {
 	if !bytes.HasSuffix(resp, []byte("\r\nEND\r\n")) {
-		return "", NotValidRespError("响应数据不合法！")
+		return nil, NotValidRespError("响应数据不合法！")
 	}
-	resp := resp[:len(resp)-len("\r\nEND\r\n")]
+	resp = resp[:len(resp)-len("\r\nEND\r\n")]
 	respLines := bytes.Split(resp, []byte("\r\n"))
 	statsMapper := make(map[string]string)
 	for _, line := range respLines {
@@ -344,11 +345,11 @@ func (m *Memcached) Stats(args ...string) (map[string]string, error) {
 	}
 	resp, err := m.conn.Send(cmd)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	err = m.checkError(string(resp))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	return m.parseStatsResp(resp)
 }
