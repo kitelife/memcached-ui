@@ -17,6 +17,8 @@ func StatInfo(c *gin.Context) {
 
 	m := memcached.Memcached{}
 	m.New(host, port)
+	defer m.Close()
+
 	mapper, err := m.Stats(statType)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
