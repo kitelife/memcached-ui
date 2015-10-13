@@ -12,23 +12,24 @@ type Connection struct {
 	Conn *net.TCPConn
 }
 
-func (c *Connection) Send(cmd ...string) (resp []byte, err error) {
-	if c.Conn == nil {
-		targetTCPAddress, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", c.Host, c.Port))
-		if err != nil {
-			return nil, err
-		}
-		conn, err := net.DialTCP("tcp", nil, targetTCPAddress)
-		if err != nil {
-			return nil, err
-		}
-		err = conn.SetKeepAlive(true)
-		if err != nil {
-			return nil, err
-		}
-		c.Conn = conn
+func (c *Connection) Open() error {
+	targetTCPAddress, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", c.Host, c.Port))
+	if err != nil {
+		return err
 	}
+	conn, err := net.DialTCP("tcp", nil, targetTCPAddress)
+	if err != nil {
+		return err
+	}
+	err = conn.SetKeepAlive(true)
+	if err != nil {
+		return err
+	}
+	c.Conn = conn
+	return nil
+}
 
+func (c *Connection) Send(cmd ...string) (resp []byte, err error) {
 	// 写
 	for _, cmdPart := range cmd {
 		cmdPartBytes := []byte(cmdPart)

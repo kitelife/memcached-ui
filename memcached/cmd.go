@@ -21,11 +21,12 @@ type Memcached struct {
 	conn Connection
 }
 
-func (m *Memcached) New(host string, port int) {
+func (m *Memcached) New(host string, port int) error {
 	m.conn = Connection{
 		Host: host,
 		Port: port,
 	}
+	return m.conn.Open()
 }
 
 func (m *Memcached) checkError(resp string) error {
