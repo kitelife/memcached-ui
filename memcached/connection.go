@@ -43,7 +43,7 @@ func (c *Connection) Send(cmd ...string) (resp []byte, err error) {
 	for {
 		oneRead := make([]byte, 1024)
 		readLength, readErr := c.Conn.Read(oneRead)
-		_, bufferWriteErr := respBuffer.Write(oneRead)
+		_, bufferWriteErr := respBuffer.Write(oneRead[:readLength])
 		if readLength < len(oneRead) {
 			return respBuffer.Bytes(), nil
 		}

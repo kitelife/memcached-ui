@@ -16,21 +16,21 @@ func Test_FlushAll(t *testing.T) {
 	}
 }
 
-func Test_Get(t *testing.T) {
-	value := m.Get("hello")
-	if value == nil {
-		t.Error("Failure!")
-	} else {
+func Test_Set(t *testing.T) {
+	err := m.Set(map[string]interface{}{"key": "hello", "value": "world"})
+	if err == nil {
 		t.Log("Success!")
+	} else {
+		t.Error("Failure!", err)
 	}
 }
 
-func Test_Set(t *testing.T) {
-	status := m.Set("hello", "world", 0)
-	if status {
-		t.Log("Success!")
+func Test_Get(t *testing.T) {
+	value, err := m.Get("hello")
+	if err != nil {
+		t.Error("Failure!", err)
 	} else {
-		t.Error("Failure!")
+		t.Log("Success!", value)
 	}
 }
 
