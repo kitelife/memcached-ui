@@ -141,13 +141,7 @@ func (m *Memcached) Cas(args storageCmdArgStruct) error {
 */
 
 func (m *Memcached) parseFetchResp(resp []byte) (map[string]string, error) {
-	respLines := strings.Split(strings.TrimRight(string(resp), "\r\n"), "\r\n")
-	lineCount := len(respLines)
-	if lineCount < 2 {
-		return nil, NotValidRespError(NOT_VALID_RESP_MSG)
-	}
-	lastLine := respLines[lineCount-1]
-	if lastLine != "END" {
+	if !bytes.HasSuffix(resp, []byte("\r\nEND\r\n")) {
 		return nil, NotValidRespError(NOT_VALID_RESP_MSG)
 	}
 	filteredRespLength := len(resp) - len("\r\nEND\r\n")
@@ -327,7 +321,21 @@ func (m *Memcached) Touch(key string, expTime int) error {
 	}
 }
 
-func (m *Memcached) Stats(args ...string) interface{} {
+func (m *Memcached) parseStatsResp(resp []byte) (map[string]string, error) {
+	if !bytes.HasSuffix(resp, []byte("\r\nEND\r\n")) {
+		return "", NotValidRespError("响应数据不合法！")
+	}
+	resp := resp[:len(resp)-len("\r\nEND\r\n")]
+	respLines := bytes.Split(resp, []byte("\r\n"))
+	statsMapper := make(map[string]string)
+	for _, line := range respLines {
+		lineParts := bytes.Split(line, []byte(" "))
+		statsMapper[string(lineParts[1])] = string(lineParts[2])
+	}
+	return statsMapper, nil
+}
+
+func (m *Memcached) Stats(args ...string) (map[string]string, error) {
 	var cmd string
 	if len(args) == 0 {
 		cmd = "stats\r\n"
@@ -336,11 +344,13 @@ func (m *Memcached) Stats(args ...string) interface{} {
 	}
 	resp, err := m.conn.Send(cmd)
 	if err != nil {
-		fmt.Println(err)
-		return nil
+		return "", err
 	}
-	fmt.Printf("response: %s\n", string(resp))
-	return string(resp)
+	err = m.checkError(string(resp))
+	if err != nil {
+		return "", err
+	}
+	return m.parseStatsResp(resp)
 }
 
 // 关闭网络连接

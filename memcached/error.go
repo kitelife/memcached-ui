@@ -21,7 +21,7 @@ func (nfe NotFoundError) Error() string {
 type NotValidRespError string
 
 func (nvre NotValidRespError) Error() string {
-	return "数据获取错误：" + string(nvre)
+	return "发生错误：" + string(nvre)
 }
 
 type NotFoundError string
