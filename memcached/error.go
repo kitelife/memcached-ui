@@ -23,3 +23,9 @@ type NotValidRespError string
 func (nvre NotValidRespError) Error() string {
 	return "数据获取错误：" + string(nvre)
 }
+
+type NotFoundError string
+
+func (nfe NotFoundError) Error() string {
+	return "未找到对应的键值：" + string(dnfe)
+}

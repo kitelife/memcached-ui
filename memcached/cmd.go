@@ -220,15 +220,111 @@ func (m *Memcached) Gets(keys ...string) (map[string]string, error) {
 其他命令：flush_all、delete、incr、decr、touch、stats
 */
 
-func (m *Memcached) FlushAll() bool {
+func (m *Memcached) checkFlushAllResp(resp string) error {
+	if strings.Compare(resp, "OK\r\n") == 0 {
+		return nil
+	}
+	return errors.New("未知错误：响应数据不合法")
+}
+
+func (m *Memcached) FlushAll() error {
 	cmd := "flush_all\r\n"
 	resp, err := m.conn.Send(cmd)
 	if err != nil {
-		fmt.Println(err)
-		return false
+		return err
 	}
-	fmt.Printf("response: %s\n", string(resp))
-	return true
+	err = m.checkError(string(resp))
+	if err != nil {
+		return err
+	}
+	err = m.checkFlushAllResp(string(resp))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *Memcached) checkDeleteResp(resp []byte) error {
+	err := m.checkError(string(resp))
+	if err != nil {
+		return err
+	}
+
+	ERRORS := map[string]error{
+		"DELETED\r\n":   nil,
+		"NOT_FOUND\r\n": NotFoundError("删除失败"),
+	}
+	for k, v := range ERRORS {
+		if bytes.Compare([]byte(k), resp) == 0 {
+			return v
+		}
+	}
+	return errors.New("响应结果不合法！")
+}
+
+func (m *Memcached) Delete(key string) error {
+	cmd := fmt.Sprintf("delete %s\r\n", key)
+	resp, err := m.conn.Send(cmd)
+	if err != nil {
+		return err
+	}
+	return m.checkDeleteResp(resp)
+}
+
+func (m *Memcached) parseIncrDecrResp(resp []byte) (uint64, error) {
+	err := m.checkError(string(resp))
+	if err != nil {
+		return 0, err
+	}
+
+	if bytes.Compare(resp, []byte("NOT_FOUND\r\n")) == 0 {
+		return 0, NotFoundError("变更键值失败！")
+	}
+
+	resp = bytes.TrimRight(resp, "\r\n")
+	targetValue, err := strconv.ParseUint(string(resp), 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return targetValue, nil
+}
+
+func (m *Memcached) Incr(key string, value int64) (uint64, error) {
+	cmd := fmt.Sprintf("incr %s %d\r\n", key, value)
+	resp, err := m.conn.Send(cmd)
+	if err != nil {
+		return 0, err
+	}
+	return m.parseIncrDecrResp(resp)
+}
+
+func (m *Memcached) Decr(key string, value int64) (uint64, error) {
+	cmd := fmt.Sprintf("decr %s %d\r\n", key, value)
+	resp, err := m.conn.Send(cmd)
+	if err != nil {
+		return 0, err
+	}
+	return m.parseIncrDecrResp(resp)
+}
+
+func (m *Memcached) Touch(key string, expTime int) error {
+	cmd := fmt.Sprintf("touch %s %d\r\n", key, expTime)
+	resp, err := m.conn.Send(cmd)
+	if err != nil {
+		return err
+	}
+	err = m.checkError(string(resp))
+	if err != nil {
+		return err
+	}
+	switch {
+	case bytes.Compare(resp, []byte("TOUCHED\r\n")) == 0:
+		return nil
+	case bytes.Compare(resp, []byte("NOT_FOUND\r\n")) == 0:
+		return NotFoundError("触碰键值失败！")
+	default:
+		return errors.New("未知错误：响应数据不合法！")
+	}
 }
 
 func (m *Memcached) Stats(args ...string) interface{} {
@@ -246,6 +342,8 @@ func (m *Memcached) Stats(args ...string) interface{} {
 	fmt.Printf("response: %s\n", string(resp))
 	return string(resp)
 }
+
+// 关闭网络连接
 
 func (m *Memcached) Close() {
 	err := m.conn.Conn.Close()
