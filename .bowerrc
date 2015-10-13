@@ -1,0 +1,5 @@
+{
+    "directory": "ui/assets/lib/",
+    "analytics": false,
+    "timeout": 120000
+}

@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+// https://github.com/memcached/memcached/blob/master/doc/protocol.txt
+
 const (
 	// magic number，目前没啥鸟用
 	SET_FLAGS          = 123456
