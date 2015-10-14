@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Memcached UI</title>
+
+    <link rel="stylesheet" href="/assets/lib/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/index.css">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
+<body>
+  <div class="container">
+    <nav class="navbar navbar-inverse">
+        <div class="container-fluid">
+          <div class="navbar-header">
+            <a class="navbar-brand" href="#">Memcached UI</a>
+          </div>
+          <div class="collapse navbar-collapse">
+            <form class="navbar-form navbar-right">
+              <div class="form-group">
+                <select class="form-control">
+                  {{range $k, $v := .Servers}}
+                  <option value="{{$v}}">{{$k}}</option>
+                  {{end}}
+                </select>
+              </div>
+          </form>
+        </div>
+      </div>
+    </nav>
+    <div class="panel panel-primary">
+      <div class="panel-heading">概况</div>
+      <div class="panel-body">
+        <div class="container-fluid">
+          <div class="row">
+            <div class="col-md-3"><label>服务器</label>：{{.StatsInfo.Server}}</div>
+            <div class="col-md-3"><label>版本号</label>：{{.StatsInfo.Version}}</div>
+            <div class="col-md-3"><label>进程号</label>：{{.StatsInfo.Pid}}</div>
+            <div class="col-md-3"><label>运行时长</label>：{{.StatsInfo.Uptime}}</div>
+          </div>
+          <div class="row">
+            <div class="col-md-4"><label>可用最大内存</label>：{{.StatsInfo.MaxMemoryLimit}}</div>
+            <div class="col-md-4"><label>内存占用</label>：{{.StatsInfo.CurrMemoryUsage}}</div>
+            <div class="col-md-4"><label>内容数</label>：{{.StatsInfo.CurrItems}}</div>
+          </div>
+          <div class="row">
+            <div class="col-md-4"><label>连接数</label>：{{.StatsInfo.CurrConnections}}</div>
+            <div class="col-md-4"><label>GET命中数</label>：{{.StatsInfo.GetHits}}</div>
+            <div class="col-md-4"><label>GET未命中数</label>：{{.StatsInfo.GetMisses}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="panel panel-danger">
+      <div class="panel-heading">操作</div>
+      <div class="panel-body">
+
+      </div>
+    </div>
+  </div>
+    <script src="/assets/lib/jquery/dist/jquery.min.js"></script>
+    <script src="/assets/lib/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="/assets/index.js"></script>
+</body>
+</html>

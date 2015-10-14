@@ -69,33 +69,35 @@ type storageCmdArgStruct map[string]interface{}
 
 func (m *Memcached) runStorageCmd(cmdName string, args storageCmdArgStruct) error {
 	// 必须
-	key, ok := args["key"]
+	var key, value string
+	keyI, ok := args["key"]
 	if ok == false {
 		return errors.New("缺少参数key")
 	} else {
-		key = key.(string)
+		key = keyI.(string)
 	}
-	value, ok := args["value"]
+	valueI, ok := args["value"]
 	if ok == false {
 		return errors.New("缺少参数value")
 	} else {
-		value = value.(string)
+		value = valueI.(string)
 	}
 
 	// 可选
-	flags, ok := args["flags"]
+	var flags, expTime string
+	flagsI, ok := args["flags"]
 	if ok == false {
 		flags = strconv.Itoa(SET_FLAGS)
 	} else {
-		flags = string(flags.(int))
+		flags = string(flagsI.(int))
 	}
-	expTime, ok := args["expire_time"]
+	expTimeI, ok := args["expire_time"]
 	if ok == false {
 		expTime = "0"
 	} else {
-		expTime = strconv.Itoa(expTime.(int))
+		expTime = strconv.Itoa(expTimeI.(int))
 	}
-	argList := []string{key.(string), flags.(string), expTime.(string), strconv.Itoa(len(value.(string)))}
+	argList := []string{key, flags, expTime, strconv.Itoa(len(value))}
 	if cmdName == "cas" {
 		if casUnique, ok := args["cas_unique"]; ok {
 			argList = append(argList, casUnique.(string))
