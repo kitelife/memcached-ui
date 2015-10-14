@@ -42,10 +42,12 @@
       <div class="panel-body">
         <div class="container-fluid">
           <div class="row">
-            <div class="col-md-3"><label>服务器</label>：{{.StatsInfo.Server}}</div>
-            <div class="col-md-3"><label>版本号</label>：{{.StatsInfo.Version}}</div>
-            <div class="col-md-3"><label>进程号</label>：{{.StatsInfo.Pid}}</div>
-            <div class="col-md-3"><label>运行时长</label>：{{.StatsInfo.Uptime}}</div>
+            <div class="col-md-4"><label>服务器</label>：{{.StatsInfo.Server}}</div>
+            <div class="col-md-4"><label>版本号</label>：{{.StatsInfo.Version}}</div>
+            <div class="col-md-4"><label>进程号</label>：{{.StatsInfo.Pid}}</div>
+          </div>
+          <div class="row"> 
+            <div class="col-md-4"><label>运行时长</label>：{{.StatsInfo.Uptime}}</div>
           </div>
           <div class="row">
             <div class="col-md-4"><label>可用最大内存</label>：{{.StatsInfo.MaxMemoryLimit}}</div>
