@@ -4,10 +4,6 @@
 
 不依赖第三方Memcached客户端库。
 
-#### 依赖
-
-- github.com/gin-gonic/gin
-
 #### TODO
 
 - 统计数据展示
