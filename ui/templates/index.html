@@ -43,22 +43,24 @@
       <div class="panel-body">
         <div class="container-fluid">
           <div class="row">
-            <div class="col-md-4"><label>服务器</label>：{{.StatsInfo.Server}}</div>
-            <div class="col-md-4"><label>版本号</label>：{{.StatsInfo.Version}}</div>
-            <div class="col-md-4"><label>进程号</label>：{{.StatsInfo.Pid}}</div>
+            <div class="col-md-6"><label>服务器</label>：{{.StatsInfo.Server}}</div>
+            <div class="col-md-6"><label>版本号</label>：{{.StatsInfo.Version}}</div>
           </div>
           <div class="row">
-            <div class="col-md-4"><label>运行时长</label>：{{.StatsInfo.Uptime}}</div>
+            <div class="col-md-6"><label>进程号</label>：{{.StatsInfo.Pid}}</div>
+            <div class="col-md-6"><label>运行时长</label>：{{.StatsInfo.Uptime}}</div>
           </div>
           <div class="row">
-            <div class="col-md-4"><label>可用最大内存</label>：{{.StatsInfo.MaxMemoryLimit}}</div>
-            <div class="col-md-4"><label>内存占用</label>：{{.StatsInfo.CurrMemoryUsage}}</div>
-            <div class="col-md-4"><label>内容数</label>：{{.StatsInfo.CurrItems}}</div>
+            <div class="col-md-6"><label>可用最大内存</label>：{{.StatsInfo.MaxMemoryLimit}}</div>
+            <div class="col-md-6"><label>内存占用</label>：{{.StatsInfo.CurrMemoryUsage}}</div>
           </div>
           <div class="row">
-            <div class="col-md-4"><label>连接数</label>：{{.StatsInfo.CurrConnections}}</div>
-            <div class="col-md-4"><label>GET命中数</label>：{{.StatsInfo.GetHits}}</div>
-            <div class="col-md-4"><label>GET未命中数</label>：{{.StatsInfo.GetMisses}}</div>
+            <div class="col-md-6"><label>内容数</label>：{{.StatsInfo.CurrItems}}</div>
+            <div class="col-md-6"><label>连接数</label>：{{.StatsInfo.CurrConnections}}</div>
+          </div>
+          <div class="row">
+            <div class="col-md-6"><label>GET命中数</label>：{{.StatsInfo.GetHits}}</div>
+            <div class="col-md-6"><label>GET未命中数</label>：{{.StatsInfo.GetMisses}}</div>
           </div>
         </div>
       </div>
