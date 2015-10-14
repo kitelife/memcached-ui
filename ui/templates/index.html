@@ -25,15 +25,16 @@
             <a class="navbar-brand" href="#">Memcached UI</a>
           </div>
           <div class="collapse navbar-collapse">
-            <form class="navbar-form navbar-right">
-              <div class="form-group">
-                <select class="form-control">
+            <ul class="nav navbar-nav navbar-right">
+              <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">选择服务器 <span class="caret"></span></a>
+                <ul class="dropdown-menu">
                   {{range $k, $v := .Servers}}
-                  <option value="{{$v}}">{{$k}}</option>
+                  <li><a href="/?server={{$v}}">{{$k}}</a></li>
                   {{end}}
-                </select>
-              </div>
-          </form>
+                </ul>
+              </li>
+            </ul>
         </div>
       </div>
     </nav>
@@ -46,7 +47,7 @@
             <div class="col-md-4"><label>版本号</label>：{{.StatsInfo.Version}}</div>
             <div class="col-md-4"><label>进程号</label>：{{.StatsInfo.Pid}}</div>
           </div>
-          <div class="row"> 
+          <div class="row">
             <div class="col-md-4"><label>运行时长</label>：{{.StatsInfo.Uptime}}</div>
           </div>
           <div class="row">
