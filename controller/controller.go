@@ -31,7 +31,7 @@ var actionAllowed []string = []string{"get", "set", "delete", "flush_all"}
 
 func validAction(targetAction string) bool {
 	for _, action := range actionAllowed {
-		if strings.Compare(targetAction, action) == 0 {
+		if targetAction == action {
 			return true
 		}
 	}
@@ -212,7 +212,7 @@ func Do(c *gin.Context) {
 			"status": "success",
 			"data":   string(resp),
 		})
-	case strings.Compare(targetAction, "delete") == 0:
+	case targetAction == "delete":
 		key := c.PostForm("key")
 		if useYii {
 			key = genYiiKey(key, ac.Yii)
@@ -229,7 +229,7 @@ func Do(c *gin.Context) {
 			"status": "success",
 			"data":   string(resp),
 		})
-	case strings.Compare(targetAction, "flush_all") == 0:
+	case targetAction == "flush_all":
 		resp, err := m.FlushAll()
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
