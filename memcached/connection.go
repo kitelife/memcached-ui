@@ -1,8 +1,8 @@
 package memcached
 
 import (
-	"bytes"
 	"fmt"
+	"io"
 	"net"
 )
 
@@ -40,20 +40,19 @@ func (c *Connection) Send(cmd ...string) (resp []byte, err error) {
 		}
 	}
 	// 读
-	var respBuffer bytes.Buffer
+	respBuffer := make([]byte, 1024)
+	respLength := 0
 	for {
-		oneRead := make([]byte, 1024)
-		readLength, readErr := c.Conn.Read(oneRead)
-		_, bufferWriteErr := respBuffer.Write(oneRead[:readLength])
-		if readLength < len(oneRead) {
-			return respBuffer.Bytes(), nil
+		readLength, readErr := c.Conn.Read(respBuffer[respLength:])
+		respLength += readLength
+		if (len(respBuffer)-respLength) > 0 || readErr == io.EOF {
+			return respBuffer[:respLength], nil
 		}
-
 		if readErr != nil {
-			return respBuffer.Bytes(), readErr
+			return respBuffer[:respLength], readErr
 		}
-		if bufferWriteErr != nil {
-			return respBuffer.Bytes(), bufferWriteErr
-		}
+		biggerRespBuffer := make([]byte, respLength*2)
+		copy(biggerRespBuffer, respBuffer)
+		respBuffer = biggerRespBuffer
 	}
 }
