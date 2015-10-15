@@ -86,7 +86,7 @@ func (c *Connection) Receive(cmd string) (interface{}, error) {
 				if err != nil {
 					return mapper, err
 				}
-				return mapper, NotValidRespError("响应数据格式非法")
+				return mapper, errors.New("响应数据格式非法")
 			}
 			valueLength, err := strconv.Atoi(string(lineParts[3]))
 			if err != nil {
@@ -124,7 +124,7 @@ func (c *Connection) Receive(cmd string) (interface{}, error) {
 				if err != nil {
 					return mapper, err
 				}
-				return mapper, NotValidRespError("响应数据格式非法")
+				return mapper, errors.New("响应数据格式非法")
 			}
 			mapper[string(lineParts[1])] = string(lineParts[2])
 		}
