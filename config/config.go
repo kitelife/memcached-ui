@@ -7,6 +7,7 @@ import (
 
 type AppConfigStruct struct {
 	Servers map[string]string
+	Yii map[string]string
 }
 
 func LoadAppConfig(configPath string) (conf AppConfigStruct, err error) {

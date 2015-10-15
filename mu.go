@@ -33,5 +33,6 @@ func main() {
 	r.Use(appConfigMiddleware(appConfig))
 
 	r.GET("/", controller.Home)
+	r.POST("/do", controller.Do)
 	r.Run(":8080")
 }

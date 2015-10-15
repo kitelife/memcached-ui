@@ -65,9 +65,9 @@ func (m *Memcached) checkStorageCmdResp(resp string) error {
 存储类型命令：set、add、replace、append、prepend、cas
 */
 
-type storageCmdArgStruct map[string]interface{}
+type StorageCmdArgStruct map[string]interface{}
 
-func (m *Memcached) runStorageCmd(cmdName string, args storageCmdArgStruct) error {
+func (m *Memcached) runStorageCmd(cmdName string, args StorageCmdArgStruct) error {
 	// 必须
 	var key, value string
 	keyI, ok := args["key"]
@@ -117,27 +117,27 @@ func (m *Memcached) runStorageCmd(cmdName string, args storageCmdArgStruct) erro
 	return m.checkStorageCmdResp(respString)
 }
 
-func (m *Memcached) Set(args storageCmdArgStruct) error {
+func (m *Memcached) Set(args StorageCmdArgStruct) error {
 	return m.runStorageCmd("set", args)
 }
 
-func (m *Memcached) Add(args storageCmdArgStruct) error {
+func (m *Memcached) Add(args StorageCmdArgStruct) error {
 	return m.runStorageCmd("add", args)
 }
 
-func (m *Memcached) Replace(args storageCmdArgStruct) error {
+func (m *Memcached) Replace(args StorageCmdArgStruct) error {
 	return m.runStorageCmd("replace", args)
 }
 
-func (m *Memcached) Append(args storageCmdArgStruct) error {
+func (m *Memcached) Append(args StorageCmdArgStruct) error {
 	return m.runStorageCmd("append", args)
 }
 
-func (m *Memcached) Prepend(args storageCmdArgStruct) error {
+func (m *Memcached) Prepend(args StorageCmdArgStruct) error {
 	return m.runStorageCmd("prepend", args)
 }
 
-func (m *Memcached) Cas(args storageCmdArgStruct) error {
+func (m *Memcached) Cas(args StorageCmdArgStruct) error {
 	return m.runStorageCmd("cas", args)
 }
 
@@ -146,13 +146,20 @@ func (m *Memcached) Cas(args storageCmdArgStruct) error {
 */
 
 func (m *Memcached) parseFetchResp(resp []byte) (map[string]string, error) {
-	if !bytes.HasSuffix(resp, []byte("\r\nEND\r\n")) {
+	if !bytes.HasSuffix(resp, []byte("END\r\n")) {
 		return nil, NotValidRespError(NOT_VALID_RESP_MSG)
 	}
-	filteredRespLength := len(resp) - len("\r\nEND\r\n")
+
+	parsedKV := make(map[string]string)
+
+	filteredRespLength := len(resp) - len("END\r\n")
+	if filteredRespLength == 0 {
+		return parsedKV, NotFoundError("未找到目标键值")
+	}
+
+	filteredRespLength = filteredRespLength - len("\r\n")
 	// 类型 []byte
 	filteredResp := resp[:filteredRespLength]
-	parsedKV := make(map[string]string)
 	lineBreakLength := len("\r\n")
 	for len(filteredResp) > 0 {
 		if !bytes.HasPrefix(filteredResp, []byte("VALUE ")) {

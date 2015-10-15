@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"crypto/md5"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -12,6 +13,7 @@ import (
 )
 
 type StatsInfoStruct struct {
+	Id string
 	Server string
 	Pid string
 	Version string
@@ -24,32 +26,49 @@ type StatsInfoStruct struct {
 	GetMisses string
 }
 
+var actionAllowed []string = []string{"get", "set", "delete", "flush_all"}
+
+func validAction(targetAction string) bool {
+	for _, action := range actionAllowed {
+		if strings.Compare(targetAction, action) == 0 {
+			return true
+		}
+	}
+	return false
+}
+
 func getAppConfig(c *gin.Context) config.AppConfigStruct {
 	appConf, _ := c.Get("app_conf")
 	return appConf.(config.AppConfigStruct)
 }
 
-func getStatsInfo(server string)(map[string]string, error) {
+func genYiiKey(key string, yiiConf map[string]string)string {
+	fmt.Println(key)
+	innerKey := yiiConf["app_name"] + key
+	if yiiConf["hash"] == "yes" {
+		innerKey = fmt.Sprintf("%x", md5.Sum([]byte(innerKey)))
+	}
+	fmt.Println(innerKey)
+	return innerKey
+}
+
+func newMemcached(server string) (memcached.Memcached, error){
 	serverParts := strings.Split(server, ":")
 	host := serverParts[0]
 	port, _ := strconv.Atoi(serverParts[1])
 
 	m := memcached.Memcached{}
 	err := m.New(host, port)
+	return m, err
+}
+
+func getStatsInfo(server string)(map[string]string, error) {
+	m, err := newMemcached(server)
 	if err != nil {
 		return nil, err
 	}
 	defer m.Close()
  	return m.Stats()
-}
-
-func checkValidServer(targetServer string, serverList []string)bool {
-	for _, server := range serverList {
-		if strings.Compare(server, targetServer) == 0 {
-			return true
-		}
-	}
-	return false
 }
 
 func formatUptime(uptime int) string {
@@ -87,20 +106,140 @@ func Home(c *gin.Context) {
 	ac := getAppConfig(c)
 
 	hostPortList := make([]string, 0, 100)
-	for _, v := range ac.Servers {
-		hostPortList = append(hostPortList, v)
+	for k, _ := range ac.Servers {
+		hostPortList = append(hostPortList, k)
 	}
 
 	targetServer := c.Query("server")
-	if !checkValidServer(targetServer, hostPortList) {
+	if _, ok := ac.Servers[targetServer]; ok == false {
 		targetServer = hostPortList[0]
 	}
-	statsInfo, _ := getStatsInfo(targetServer)
+
+	infoErr := ""
+	hasInfoErr := false
+	statsInfo, err := getStatsInfo(targetServer)
+	if err != nil {
+		infoErr = err.Error()
+		hasInfoErr = true
+	}
 	structedStatsInfo := statsMap2Struct(statsInfo)
 	structedStatsInfo.Server = targetServer
+	structedStatsInfo.Id = ac.Servers[targetServer]
 
 	c.HTML(http.StatusOK, "index.html", gin.H{
+		"HasInfoErr": hasInfoErr,
+		"InfoErr": infoErr,
 		"Servers": ac.Servers,
 		"StatsInfo": structedStatsInfo,
 	})
+}
+
+func Do(c *gin.Context) {
+	ac := getAppConfig(c)
+
+	targetServer := c.PostForm("server")
+	if _, ok := ac.Servers[targetServer]; ok == false {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "failure",
+			"msg": "不存在目标Memcached服务",
+		});
+		return;
+	}
+	targetAction := c.PostForm("action")
+	if validAction(targetAction) == false {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "failure",
+			"msg": "不存在目标action",
+		});
+		return
+	}
+	m, err := newMemcached(targetServer)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "failure",
+			"msg": "目标Memcached服务连接失败：" + err.Error(),
+		});
+		return
+	}
+	defer m.Close()
+
+	// 是否支持Yii使用缓存的方式
+	useYii := false
+	if ac.Yii["status"] == "on" {
+		useYii = true
+	}
+
+	switch {
+	case targetAction == "get":
+		key := c.PostForm("key")
+		if useYii {
+			key = genYiiKey(key, ac.Yii)
+		}
+		result, err := m.Get(key)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"msg": "获取缓存数据失败：" + err.Error(),
+			});
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"status": "success",
+			"data": result,
+		})
+		return
+	case targetAction == "set":
+		key := c.PostForm("key")
+		if useYii {
+			key = genYiiKey(key, ac.Yii)
+		}
+		value := c.PostForm("value")
+		expTime := c.DefaultPostForm("exp_time", "0")
+		expTimeInt, err := strconv.Atoi(expTime)
+		if err != nil {
+			expTimeInt = 0
+		}
+		err = m.Set(memcached.StorageCmdArgStruct{"key": key, "value": value, "expire_time": expTimeInt})
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"msg": "添加缓存失败：" + err.Error(),
+			});
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"status": "success",
+			"data": "添加成功！",
+		})
+	case strings.Compare(targetAction, "delete") == 0:
+		key := c.PostForm("key")
+		if useYii {
+			key = genYiiKey(key, ac.Yii)
+		}
+		err = m.Delete(key)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"msg": "删除缓存失败：" + err.Error(),
+			});
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"status": "success",
+			"data": "删除成功！",
+		})
+	case strings.Compare(targetAction, "flush_all") == 0:
+		err = m.FlushAll()
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "failure",
+				"msg": "清空缓存失败：" + err.Error(),
+			});
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"status": "success",
+			"data": "清空成功！",
+		})
+	}
 }

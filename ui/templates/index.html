@@ -27,10 +27,10 @@
           <div class="collapse navbar-collapse">
             <ul class="nav navbar-nav navbar-right">
               <li class="dropdown">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">选择服务器 <span class="caret"></span></a>
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">当前服务器：{{.StatsInfo.Id}} <span class="caret"></span></a>
                 <ul class="dropdown-menu">
                   {{range $k, $v := .Servers}}
-                  <li><a href="/?server={{$v}}">{{$k}}</a></li>
+                  <li><a href="/?server={{$k}}">{{$v}}</a></li>
                   {{end}}
                 </ul>
               </li>
@@ -38,6 +38,9 @@
         </div>
       </div>
     </nav>
+    {{if .HasInfoErr }}
+    <div class="alert alert-danger" role="alert" style="text-align: center; font-size: 16px;">{{.InfoErr}}</div>
+    {{end}}
     <div class="panel panel-primary">
       <div class="panel-heading">概况</div>
       <div class="panel-body">
@@ -68,12 +71,53 @@
     <div class="panel panel-danger">
       <div class="panel-heading">操作</div>
       <div class="panel-body">
-
+        <input type="hidden" value="{{.StatsInfo.Server}}" id="target_server"/>
+        <!-- Nav tabs -->
+        <ul class="nav nav-tabs" role="tablist">
+          <li role="presentation" class="active"><a href="#action_get" role="tab" data-toggle="tab">Get</a></li>
+          <li role="presentation"><a href="#action_set" role="tab" data-toggle="tab">Set</a></li>
+          <li role="presentation"><a href="#action_delete" role="tab" data-toggle="tab">Delete</a></li>
+          <li role="presentation"><a href="#action_flushall" role="tab" data-toggle="tab">FlushAll</a></li>
+        </ul>
+        <!-- Tab panes -->
+        <div class="tab-content">
+          <div role="tabpanel" class="tab-pane active" id="action_get">
+            <form class="form-inline" style="margin-top: 10px;">
+              <div class="form-group">
+                <label>键</label>：<input type="text" name="get_key" class="form-control" v-model="k">
+              </div>
+              <button class="btn btn-default" v-on="click: getIt">查询</button>
+            </form>
+          </div>
+          <div role="tabpanel" class="tab-pane" id="action_set">
+            <form class="form-inline" style="margin-top: 10px;">
+              <div class="form-group">
+                <label>键</label>：<input type="text" name="set_key" class="form-control" v-model="k">
+                <label>值</label>：<textarea name="set_value" class="form-control" rows="1" v-model="v"></textarea>
+                <label>有效期</label>：<input type="number" name="set_exptime" class="form-control" v-model="expTime">
+              </div>
+              <button class="btn btn-default" v-on="click: setIt">提交</button>
+            </form>
+          </div>
+          <div role="tabpanel" class="tab-pane" id="action_delete">
+            <form class="form-inline" style="margin-top: 10px;">
+              <div class="form-group">
+                <label>键</label>：<input type="text" name="delete_key" class="form-control" v-model="k">
+              </div>
+              <button class="btn btn-default" v-on="deleteIt">确定</button>
+            </form>
+          </div>
+          <div role="tabpanel" class="tab-pane" id="action_flushall">
+            <button class="btn btn-default" style="margin-top: 10px;" v-on="click: flushIt">确定清空</button>
+          </div>
       </div>
     </div>
   </div>
-    <script src="/assets/lib/jquery/dist/jquery.min.js"></script>
-    <script src="/assets/lib/bootstrap/dist/js/bootstrap.min.js"></script>
-    <script src="/assets/index.js"></script>
+  <div id="action_result" style="text-align: center;"></div>
+</div>
+<script src="/assets/lib/jquery/dist/jquery.min.js"></script>
+<script src="/assets/lib/bootstrap/dist/js/bootstrap.min.js"></script>
+<script src="/assets/lib/vue/dist/vue.min.js"></script>
+<script src="/assets/index.js"></script>
 </body>
 </html>
