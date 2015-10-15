@@ -1,10 +1,8 @@
 package memcached
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 )
@@ -13,8 +11,7 @@ import (
 
 const (
 	// magic number，目前没啥鸟用
-	SET_FLAGS          = 123456
-	NOT_VALID_RESP_MSG = "无效的服务器响应数据"
+	SET_FLAGS = 123456
 )
 
 type Memcached struct {
@@ -29,56 +26,24 @@ func (m *Memcached) New(host string, port int) error {
 	return m.conn.Open()
 }
 
-func (m *Memcached) checkError(resp string) error {
-	if strings.Compare(resp, "ERROR\r\n") == 0 {
-		return errors.New("发生错误：ERROR")
-	}
-	matched, _ := regexp.MatchString("CLIENT_ERROR .+\r\n", resp)
-	if matched {
-		return errors.New(fmt.Sprintf("发生错误：%s", strings.TrimRight(resp, "\r\n")))
-	}
-	matched, _ = regexp.MatchString("SERVER_ERROR .+\r\n", resp)
-	if matched {
-		return errors.New(fmt.Sprintf("发生错误：%s", strings.TrimRight(resp, "\r\n")))
-	}
-	return nil
-}
-
-func (m *Memcached) checkStorageCmdResp(resp string) error {
-	ERRORS := map[string]error{
-		"STORED\r\n":     nil,
-		"NOT_STORED\r\n": NotStoredError("未能存储数据"),
-		"EXISTS\r\n":     ExistsError("数据已存在/已被别人修改"),
-		"NOT_FOUND\r\n":  NotFoundError("未找到对应的数据"),
-	}
-
-	for k, v := range ERRORS {
-		if strings.Compare(resp, k) == 0 {
-			return v
-		}
-	}
-
-	return errors.New("未知错误：" + string(resp))
-}
-
 /*
 存储类型命令：set、add、replace、append、prepend、cas
 */
 
 type StorageCmdArgStruct map[string]interface{}
 
-func (m *Memcached) runStorageCmd(cmdName string, args StorageCmdArgStruct) error {
+func (m *Memcached) runStorageCmd(cmdName string, args StorageCmdArgStruct) ([]byte, error) {
 	// 必须
 	var key, value string
 	keyI, ok := args["key"]
 	if ok == false {
-		return errors.New("缺少参数key")
+		return nil, errors.New("缺少参数key")
 	} else {
 		key = keyI.(string)
 	}
 	valueI, ok := args["value"]
 	if ok == false {
-		return errors.New("缺少参数value")
+		return nil, errors.New("缺少参数value")
 	} else {
 		value = valueI.(string)
 	}
@@ -105,39 +70,35 @@ func (m *Memcached) runStorageCmd(cmdName string, args StorageCmdArgStruct) erro
 	}
 
 	cmd := fmt.Sprintf("%s %s\r\n", cmdName, strings.Join(argList, " "))
-	resp, err := m.conn.Send(cmd, fmt.Sprintf("%s\r\n", value))
+	err := m.conn.Send(cmd, fmt.Sprintf("%s\r\n", value))
 	if err != nil {
-		return err
+		return nil, err
 	}
-	respString := string(resp)
-	err = m.checkError(respString)
-	if err != nil {
-		return err
-	}
-	return m.checkStorageCmdResp(respString)
+	resp, err := m.conn.Receive(cmdName)
+	return resp.([]byte), err
 }
 
-func (m *Memcached) Set(args StorageCmdArgStruct) error {
+func (m *Memcached) Set(args StorageCmdArgStruct) ([]byte, error) {
 	return m.runStorageCmd("set", args)
 }
 
-func (m *Memcached) Add(args StorageCmdArgStruct) error {
+func (m *Memcached) Add(args StorageCmdArgStruct) ([]byte, error) {
 	return m.runStorageCmd("add", args)
 }
 
-func (m *Memcached) Replace(args StorageCmdArgStruct) error {
+func (m *Memcached) Replace(args StorageCmdArgStruct) ([]byte, error) {
 	return m.runStorageCmd("replace", args)
 }
 
-func (m *Memcached) Append(args StorageCmdArgStruct) error {
+func (m *Memcached) Append(args StorageCmdArgStruct) ([]byte, error) {
 	return m.runStorageCmd("append", args)
 }
 
-func (m *Memcached) Prepend(args StorageCmdArgStruct) error {
+func (m *Memcached) Prepend(args StorageCmdArgStruct) ([]byte, error) {
 	return m.runStorageCmd("prepend", args)
 }
 
-func (m *Memcached) Cas(args StorageCmdArgStruct) error {
+func (m *Memcached) Cas(args StorageCmdArgStruct) ([]byte, error) {
 	return m.runStorageCmd("cas", args)
 }
 
@@ -145,66 +106,14 @@ func (m *Memcached) Cas(args StorageCmdArgStruct) error {
 数据获取类型命令：get、gets
 */
 
-func (m *Memcached) parseFetchResp(resp []byte) (map[string]string, error) {
-	if !bytes.HasSuffix(resp, []byte("END\r\n")) {
-		return nil, NotValidRespError(NOT_VALID_RESP_MSG)
-	}
-
-	parsedKV := make(map[string]string)
-
-	filteredRespLength := len(resp) - len("END\r\n")
-	if filteredRespLength == 0 {
-		return parsedKV, NotFoundError("未找到目标键值")
-	}
-
-	filteredRespLength = filteredRespLength - len("\r\n")
-	// 类型 []byte
-	filteredResp := resp[:filteredRespLength]
-	lineBreakLength := len("\r\n")
-	for len(filteredResp) > 0 {
-		if !bytes.HasPrefix(filteredResp, []byte("VALUE ")) {
-			return nil, NotValidRespError(NOT_VALID_RESP_MSG)
-		}
-		lineBreakPosition := bytes.Index(filteredResp, []byte("\r\n"))
-		if lineBreakPosition == -1 {
-			return nil, NotValidRespError(NOT_VALID_RESP_MSG)
-		}
-		itemMetaLine := filteredResp[:lineBreakPosition]
-		metaLineParts := bytes.Split(itemMetaLine, []byte(" "))
-		if len(metaLineParts) < 4 {
-			return nil, NotValidRespError(NOT_VALID_RESP_MSG)
-		}
-		// 目标key
-		targetKey := string(metaLineParts[1])
-
-		dataBeginPosition := lineBreakPosition + lineBreakLength
-		targetValueLength, _ := strconv.Atoi(string(metaLineParts[3]))
-		dataEndPosition := dataBeginPosition + targetValueLength
-		// 目标value
-		targetValue := filteredResp[dataBeginPosition:dataEndPosition]
-		parsedKV[targetKey] = string(targetValue)
-
-		if dataEndPosition == len(filteredResp) {
-			filteredResp = nil
-		} else {
-			filteredResp = filteredResp[dataEndPosition+lineBreakLength:]
-		}
-		fmt.Println(string(filteredResp))
-	}
-	return parsedKV, nil
-}
-
 func (m *Memcached) runFetchCmd(cmdName, keys string) (map[string]string, error) {
 	cmd := fmt.Sprintf("%s %s\r\n", cmdName, keys)
-	resp, err := m.conn.Send(cmd)
+	err := m.conn.Send(cmd)
 	if err != nil {
 		return nil, err
 	}
-	err = m.checkError(string(resp))
-	if err != nil {
-		return nil, err
-	}
-	return m.parseFetchResp(resp)
+	resp, err := m.conn.Receive(cmdName)
+	return resp.(map[string]string), err
 }
 
 func (m *Memcached) Get(key string) (string, error) {
@@ -227,125 +136,54 @@ func (m *Memcached) Gets(keys ...string) (map[string]string, error) {
 其他命令：flush_all、delete、incr、decr、touch、stats
 */
 
-func (m *Memcached) checkFlushAllResp(resp string) error {
-	if strings.Compare(resp, "OK\r\n") == 0 {
-		return nil
-	}
-	return errors.New("未知错误：响应数据不合法")
-}
-
-func (m *Memcached) FlushAll() error {
+func (m *Memcached) FlushAll() ([]byte, error) {
 	cmd := "flush_all\r\n"
-	resp, err := m.conn.Send(cmd)
+	err := m.conn.Send(cmd)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	err = m.checkError(string(resp))
-	if err != nil {
-		return err
-	}
-	err = m.checkFlushAllResp(string(resp))
-	if err != nil {
-		return err
-	}
-	return nil
+	resp, err := m.conn.Receive("flush_all")
+	return resp.([]byte), err
 }
 
-func (m *Memcached) checkDeleteResp(resp []byte) error {
-	err := m.checkError(string(resp))
-	if err != nil {
-		return err
-	}
-
-	ERRORS := map[string]error{
-		"DELETED\r\n":   nil,
-		"NOT_FOUND\r\n": NotFoundError("删除失败"),
-	}
-	for k, v := range ERRORS {
-		if bytes.Compare([]byte(k), resp) == 0 {
-			return v
-		}
-	}
-	return errors.New("响应结果不合法！")
-}
-
-func (m *Memcached) Delete(key string) error {
+func (m *Memcached) Delete(key string) ([]byte, error) {
 	cmd := fmt.Sprintf("delete %s\r\n", key)
-	resp, err := m.conn.Send(cmd)
+	err := m.conn.Send(cmd)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return m.checkDeleteResp(resp)
+	resp, err := m.conn.Receive("delete")
+	return resp.([]byte), err
 }
 
-func (m *Memcached) parseIncrDecrResp(resp []byte) (uint64, error) {
-	err := m.checkError(string(resp))
-	if err != nil {
-		return 0, err
-	}
-
-	if bytes.Compare(resp, []byte("NOT_FOUND\r\n")) == 0 {
-		return 0, NotFoundError("变更键值失败！")
-	}
-
-	resp = bytes.TrimRight(resp, "\r\n")
-	targetValue, err := strconv.ParseUint(string(resp), 10, 64)
-	if err != nil {
-		return 0, err
-	}
-	return targetValue, nil
-}
-
-func (m *Memcached) Incr(key string, value int64) (uint64, error) {
+func (m *Memcached) Incr(key string, value int64) ([]byte, error) {
 	cmd := fmt.Sprintf("incr %s %d\r\n", key, value)
-	resp, err := m.conn.Send(cmd)
+	err := m.conn.Send(cmd)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	return m.parseIncrDecrResp(resp)
+	resp, err := m.conn.Receive("incr")
+	return resp.([]byte), err
 }
 
-func (m *Memcached) Decr(key string, value int64) (uint64, error) {
+func (m *Memcached) Decr(key string, value int64) ([]byte, error) {
 	cmd := fmt.Sprintf("decr %s %d\r\n", key, value)
-	resp, err := m.conn.Send(cmd)
+	err := m.conn.Send(cmd)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	return m.parseIncrDecrResp(resp)
+	resp, err := m.conn.Receive("decr")
+	return resp.([]byte), err
 }
 
-func (m *Memcached) Touch(key string, expTime int) error {
+func (m *Memcached) Touch(key string, expTime int) ([]byte, error) {
 	cmd := fmt.Sprintf("touch %s %d\r\n", key, expTime)
-	resp, err := m.conn.Send(cmd)
+	err := m.conn.Send(cmd)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	err = m.checkError(string(resp))
-	if err != nil {
-		return err
-	}
-	switch {
-	case bytes.Compare(resp, []byte("TOUCHED\r\n")) == 0:
-		return nil
-	case bytes.Compare(resp, []byte("NOT_FOUND\r\n")) == 0:
-		return NotFoundError("触碰键值失败！")
-	default:
-		return errors.New("未知错误：响应数据不合法！")
-	}
-}
-
-func (m *Memcached) parseStatsResp(resp []byte) (map[string]string, error) {
-	if !bytes.HasSuffix(resp, []byte("\r\nEND\r\n")) {
-		return nil, NotValidRespError("响应数据不合法！")
-	}
-	resp = resp[:len(resp)-len("\r\nEND\r\n")]
-	respLines := bytes.Split(resp, []byte("\r\n"))
-	statsMapper := make(map[string]string)
-	for _, line := range respLines {
-		lineParts := bytes.Split(line, []byte(" "))
-		statsMapper[string(lineParts[1])] = string(lineParts[2])
-	}
-	return statsMapper, nil
+	resp, err := m.conn.Receive("touch")
+	return resp.([]byte), err
 }
 
 func (m *Memcached) Stats(args ...string) (map[string]string, error) {
@@ -355,15 +193,12 @@ func (m *Memcached) Stats(args ...string) (map[string]string, error) {
 	} else {
 		cmd = fmt.Sprintf("stats %s\r\n", args[0])
 	}
-	resp, err := m.conn.Send(cmd)
+	err := m.conn.Send(cmd)
 	if err != nil {
 		return nil, err
 	}
-	err = m.checkError(string(resp))
-	if err != nil {
-		return nil, err
-	}
-	return m.parseStatsResp(resp)
+	resp, err := m.conn.Receive("stats")
+	return resp.(map[string]string), err
 }
 
 // 关闭网络连接

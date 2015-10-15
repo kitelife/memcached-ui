@@ -7,7 +7,7 @@ $(function(){
     } else {
       toShow = $resp.msg;
     }
-    $("#action_result").text(toShow);
+    $("#action_result").html('<label>结果</label>：' + toShow);
   }
 
   var targetServer = $("#target_server").val();

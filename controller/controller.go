@@ -14,17 +14,17 @@ import (
 )
 
 type StatsInfoStruct struct {
-	Id string
-	Server string
-	Pid string
-	Version string
-	Uptime string
-	MaxMemoryLimit string
+	Id              string
+	Server          string
+	Pid             string
+	Version         string
+	Uptime          string
+	MaxMemoryLimit  string
 	CurrMemoryUsage string
-	CurrItems string
+	CurrItems       string
 	CurrConnections string
-	GetHits string
-	GetMisses string
+	GetHits         string
+	GetMisses       string
 }
 
 var actionAllowed []string = []string{"get", "set", "delete", "flush_all"}
@@ -43,7 +43,7 @@ func getAppConfig(c *gin.Context) config.AppConfigStruct {
 	return appConf.(config.AppConfigStruct)
 }
 
-func genYiiKey(key string, yiiConf map[string]string)string {
+func genYiiKey(key string, yiiConf map[string]string) string {
 	fmt.Println(key)
 	innerKey := fmt.Sprintf("%x", crc32.ChecksumIEEE([]byte(yiiConf["app_name"]))) + key
 	if yiiConf["hash"] == "yes" {
@@ -53,7 +53,7 @@ func genYiiKey(key string, yiiConf map[string]string)string {
 	return innerKey
 }
 
-func newMemcached(server string) (memcached.Memcached, error){
+func newMemcached(server string) (memcached.Memcached, error) {
 	serverParts := strings.Split(server, ":")
 	host := serverParts[0]
 	port, _ := strconv.Atoi(serverParts[1])
@@ -63,13 +63,13 @@ func newMemcached(server string) (memcached.Memcached, error){
 	return m, err
 }
 
-func getStatsInfo(server string)(map[string]string, error) {
+func getStatsInfo(server string) (map[string]string, error) {
 	m, err := newMemcached(server)
 	if err != nil {
 		return nil, err
 	}
 	defer m.Close()
- 	return m.Stats()
+	return m.Stats()
 }
 
 func formatUptime(uptime int) string {
@@ -90,16 +90,16 @@ func statsMap2Struct(statsMapper map[string]string) StatsInfoStruct {
 	maxMemoryLimit, _ := strconv.Atoi(statsMapper["limit_maxbytes"])
 	currMemoryUsage, _ := strconv.Atoi(statsMapper["bytes"])
 
-	return StatsInfoStruct {
-		Pid: statsMapper["pid"],
-		Version: statsMapper["version"],
-		Uptime: formatUptime(uptime),
-		MaxMemoryLimit: formatMemoryUsage(maxMemoryLimit),
+	return StatsInfoStruct{
+		Pid:             statsMapper["pid"],
+		Version:         statsMapper["version"],
+		Uptime:          formatUptime(uptime),
+		MaxMemoryLimit:  formatMemoryUsage(maxMemoryLimit),
 		CurrMemoryUsage: formatMemoryUsage(currMemoryUsage),
-		CurrItems: statsMapper["curr_items"],
+		CurrItems:       statsMapper["curr_items"],
 		CurrConnections: statsMapper["curr_connections"],
-		GetHits: statsMapper["get_hits"],
-		GetMisses: statsMapper["get_misses"],
+		GetHits:         statsMapper["get_hits"],
+		GetMisses:       statsMapper["get_misses"],
 	}
 }
 
@@ -129,9 +129,9 @@ func Home(c *gin.Context) {
 
 	c.HTML(http.StatusOK, "index.html", gin.H{
 		"HasInfoErr": hasInfoErr,
-		"InfoErr": infoErr,
-		"Servers": ac.Servers,
-		"StatsInfo": structedStatsInfo,
+		"InfoErr":    infoErr,
+		"Servers":    ac.Servers,
+		"StatsInfo":  structedStatsInfo,
 	})
 }
 
@@ -142,24 +142,24 @@ func Do(c *gin.Context) {
 	if _, ok := ac.Servers[targetServer]; ok == false {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "failure",
-			"msg": "不存在目标Memcached服务",
-		});
-		return;
+			"msg":    "不存在目标Memcached服务",
+		})
+		return
 	}
 	targetAction := c.PostForm("action")
 	if validAction(targetAction) == false {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "failure",
-			"msg": "不存在目标action",
-		});
+			"msg":    "不存在目标action",
+		})
 		return
 	}
 	m, err := newMemcached(targetServer)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "failure",
-			"msg": "目标Memcached服务连接失败：" + err.Error(),
-		});
+			"msg":    "目标Memcached服务连接失败：" + err.Error(),
+		})
 		return
 	}
 	defer m.Close()
@@ -176,17 +176,17 @@ func Do(c *gin.Context) {
 		if useYii {
 			key = genYiiKey(key, ac.Yii)
 		}
-		result, err := m.Get(key)
+		resp, err := m.Get(key)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
-				"msg": "获取缓存数据失败：" + err.Error(),
-			});
+				"msg":    "获取缓存数据失败：" + err.Error(),
+			})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",
-			"data": result,
+			"data":   string(resp),
 		})
 		return
 	case targetAction == "set":
@@ -200,47 +200,47 @@ func Do(c *gin.Context) {
 		if err != nil {
 			expTimeInt = 0
 		}
-		err = m.Set(memcached.StorageCmdArgStruct{"key": key, "value": value, "expire_time": expTimeInt})
+		resp, err := m.Set(memcached.StorageCmdArgStruct{"key": key, "value": value, "expire_time": expTimeInt})
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
-				"msg": "添加缓存失败：" + err.Error(),
-			});
+				"msg":    "添加缓存失败：" + err.Error(),
+			})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",
-			"data": "添加成功！",
+			"data":   string(resp),
 		})
 	case strings.Compare(targetAction, "delete") == 0:
 		key := c.PostForm("key")
 		if useYii {
 			key = genYiiKey(key, ac.Yii)
 		}
-		err = m.Delete(key)
+		resp, err := m.Delete(key)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
-				"msg": "删除缓存失败：" + err.Error(),
-			});
+				"msg":    "删除缓存失败：" + err.Error(),
+			})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",
-			"data": "删除成功！",
+			"data":   string(resp),
 		})
 	case strings.Compare(targetAction, "flush_all") == 0:
-		err = m.FlushAll()
+		resp, err := m.FlushAll()
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"status": "failure",
-				"msg": "清空缓存失败：" + err.Error(),
-			});
+				"msg":    "清空缓存失败：" + err.Error(),
+			})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",
-			"data": "清空成功！",
+			"data":   string(resp),
 		})
 	}
 }
