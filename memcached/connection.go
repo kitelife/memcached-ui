@@ -73,7 +73,6 @@ func (c *Connection) Receive(cmd string) (interface{}, error) {
 		mapper := make(map[string]string)
 		for {
 			line, err := byteReader.ReadBytes('\n')
-			fmt.Println(string(line), err)
 			if err != nil {
 				return mapper, err
 			}
@@ -90,7 +89,6 @@ func (c *Connection) Receive(cmd string) (interface{}, error) {
 				return mapper, NotValidRespError("响应数据格式非法")
 			}
 			valueLength, err := strconv.Atoi(string(lineParts[3]))
-			fmt.Println("valueLength: ", valueLength)
 			if err != nil {
 				return mapper, err
 			}

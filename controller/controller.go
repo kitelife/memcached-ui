@@ -44,12 +44,10 @@ func getAppConfig(c *gin.Context) config.AppConfigStruct {
 }
 
 func genYiiKey(key string, yiiConf map[string]string) string {
-	fmt.Println(key)
 	innerKey := fmt.Sprintf("%x", crc32.ChecksumIEEE([]byte(yiiConf["app_name"]))) + key
 	if yiiConf["hash"] == "yes" {
 		innerKey = fmt.Sprintf("%x", md5.Sum([]byte(innerKey)))
 	}
-	fmt.Println(innerKey)
 	return innerKey
 }
 
