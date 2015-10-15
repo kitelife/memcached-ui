@@ -80,7 +80,7 @@ func formatUptime(uptime int) string {
 
 func formatMemoryUsage(usageBytes int) string {
 	usageMB := usageBytes / 1024 / 1024
-	return fmt.Sprintf("%dMB", usageMB)
+	return fmt.Sprintf("%dMB(%dB)", usageMB, usageBytes)
 }
 
 func statsMap2Struct(statsMapper map[string]string) StatsInfoStruct {
