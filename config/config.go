@@ -5,9 +5,19 @@ import (
 	"io/ioutil"
 )
 
+type YiiConfigStruct struct {
+	Status  string
+	AppName string
+	Hash    string
+}
+
+type ServerConfig struct {
+	Alias string
+	Yii   YiiConfigStruct
+}
+
 type AppConfigStruct struct {
-	Servers map[string]string
-	Yii map[string]string
+	Servers map[string]ServerConfig
 }
 
 func LoadAppConfig(configPath string) (conf AppConfigStruct, err error) {

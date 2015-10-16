@@ -1,10 +1,12 @@
 {
     "servers":{
-        "127.0.0.1:11211": "localhost"
-    },
-    "yii": {
-      "status": "on",
-      "app_name": "gxt",
-      "hash": "yes"
+        "127.0.0.1:11211": {
+            "alias": "localhost",
+            "yii": {
+                "status": "on",
+                "appName": "gxt",
+                "hash": "yes"
+            }
+        }
     }
 }
