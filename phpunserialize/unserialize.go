@@ -1,7 +1,14 @@
+// write by: xiaochi
+
+// Package phpunserialize make it possible to unserialize PHP data
+// to Go.
+// it support bool, float, int, string and array,
+// objects are not supported yet.
+//
+// Usage: str = Parse(*reader)
 package phpunserialize
 
 import (
-		"os"
 		"log"
 		"fmt"
 		"bufio"
@@ -68,17 +75,41 @@ func parseString(reader *bufio.Reader) string {
 	ReadByteEnsure(reader, ';')
 	return string(p[0:strlen])
 }
-func parseInt(reader *bufio.Reader) int64 {
+func ReadStringTo(reader *bufio.Reader) string {
 	raw, err := reader.ReadString(';')
 	if err != nil {
 		log.Fatal(err)
 	}
-	i, err := strconv.ParseInt(strings.TrimSuffix(raw, ";"), 10, 64)
+	return strings.TrimSuffix(raw, ";")
+}
+func parseInt(reader *bufio.Reader) int64 {
+	i, err := strconv.ParseInt(ReadStringTo(reader), 10, 64)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("read int %d\n", i)
 	return i
+}
+func parseFloat(reader *bufio.Reader) float64 {
+	f, err := strconv.ParseFloat(ReadStringTo(reader), 64)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return f
+}
+func parseBool(reader *bufio.Reader) bool {
+	i, err := strconv.ParseUint(ReadStringTo(reader), 10, 64)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if i == 0 {
+		return false
+	}
+	if i == 1 {
+		return true
+	}
+	log.Fatal("bool can not be ", i)
+	return false
 }
 func ReadByteEnsure(reader *bufio.Reader, c byte) (error) {
 	fmt.Printf("must be '%c'\n", c)
@@ -109,13 +140,16 @@ func Parse(reader *bufio.Reader) (i interface{}) {
 			log.Fatal(err)
 		}
 		switch t {
+		case 'd':
+			i = parseFloat(reader)
 		case 'a':
 			i = parseArray(reader)
 		case 's':
 			i = parseString(reader)
 		case 'i':
 			i = parseInt(reader)
-		// case 'b':
+		case 'b':
+			i = parseBool(reader)
 		default:
 			log.Fatal("unknow type ", t)
 		}
