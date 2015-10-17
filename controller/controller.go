@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/youngsterxyf/memcached-ui/config"
 	"github.com/youngsterxyf/memcached-ui/memcached"
+	"github.com/youngsterxyf/memcached-ui/phpunserialize"
 )
 
 type StatsInfoStruct struct {
@@ -183,12 +184,15 @@ func Do(c *gin.Context) {
 			})
 			return
 		}
+		var data interface{}
 		if resp[0] == 'a' && resp[1] == ':' {
-			
+			data = phpunserialize.Parse(bufio.NewReader(resp))
+		} else {
+			data = string(resp)
 		}
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",
-			"data":   string(resp),
+			"data":   data,
 		})
 		return
 	case targetAction == "set":

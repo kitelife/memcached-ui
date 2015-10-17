@@ -3,6 +3,12 @@ $(function(){
   function showResp($resp) {
     var toShow;
     if ($resp.status === "success") {
+      var data = $resp.data;
+      if (typeof data === 'string') {
+        toShow = data;
+      } else {
+        toShow = JSON.stringy(data);
+      }
       toShow = $resp.data;
     } else {
       toShow = $resp.msg;
