@@ -2,8 +2,8 @@
 
 // Package phpunserialize make it possible to unserialize PHP data
 // to Go.
-// it support bool, float, int, string and array,
-// objects are not supported yet.
+// It support null, bool, float, int, string and array.
+// Objects are not supported yet.
 //
 // Usage: str = Parse(*reader)
 package phpunserialize
