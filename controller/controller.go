@@ -183,6 +183,9 @@ func Do(c *gin.Context) {
 			})
 			return
 		}
+		if resp[0] == 'a' && resp[1] == ':' {
+			
+		}
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",
 			"data":   string(resp),
