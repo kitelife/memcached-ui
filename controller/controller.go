@@ -3,6 +3,7 @@ package controller
 import (
 	"crypto/md5"
 	"fmt"
+	"bufio"
 	"hash/crc32"
 	"net/http"
 	"strconv"
@@ -186,8 +187,8 @@ func Do(c *gin.Context) {
 			return
 		}
 		var data interface{}
-		if resp[0] == 'a' && resp[1] == ':' {
-			data = phpunserialize.Parse(bufio.NewReader(resp))
+		if len(resp) > 0 && resp[0] == 'a' && resp[1] == ':' {
+			data = phpunserialize.Parse(bufio.NewReader(strings.NewReader(resp)))
 		} else {
 			data = string(resp)
 		}
