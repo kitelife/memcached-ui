@@ -23,7 +23,7 @@ type ArrayItem struct {
 func parseArrayItem(reader *bufio.Reader) (ai ArrayItem) {
 	ai.key = Parse(reader)
 	ai.value = Parse(reader)
-	// fmt.Printf("%q => %q\n", ai.key, ai.value)
+	fmt.Printf("%q => %q\n", ai.key, ai.value)
 	return ai
 }
 func parseArrayBody(reader *bufio.Reader, arraylen uint64) (res interface{}) {
@@ -35,13 +35,13 @@ func parseArrayBody(reader *bufio.Reader, arraylen uint64) (res interface{}) {
 	var t interface{}
 	t = item.key
 	var arr []interface{}
-	var m map[string]interface{}
+	m := map[string]interface{}{}
 	switch t := t.(type) {
 		default:
 			fmt.Printf("unexpected type %T\n", t)     // %T prints whatever type t has
 			log.Fatal("unexpected type ", t)
 		case int64:
-			fmt.Printf("boolean %t\n", t)             // t has type bool
+			fmt.Printf("int64 %t\n", t)             // t has type int64
 			if (int(item.key.(int64)) != 0) {
 				log.Fatal("we do not support array not start with 0, but ", item.key)
 			}
@@ -55,7 +55,8 @@ func parseArrayBody(reader *bufio.Reader, arraylen uint64) (res interface{}) {
 			}
 			return arr
 		case string:
-			fmt.Printf("integer %d\n", t)             // t has type int
+			fmt.Printf("string %d\n", t)             // t has type string
+			m[item.key.(string)] = item.value
 			for i:=1; i < int(arraylen); i++ {
 				item = parseArrayItem(reader)
 				k := item.key.(string)
@@ -168,6 +169,7 @@ func Parse(reader *bufio.Reader) (i interface{}) {
 		}
 		return nil
 	} else {
+		fmt.Printf("type is %c\n", t)
 		err = ReadByteEnsure(reader, ':')
 		if err != nil {
 			log.Fatal(err)

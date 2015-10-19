@@ -179,6 +179,7 @@ func Do(c *gin.Context) {
 		if useYii {
 			key = genYiiKey(key, targetServerConfig.Yii)
 		}
+		fmt.Println("get %s", key)
 		resp, err := m.Get(key)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{

@@ -32,5 +32,16 @@ func TestParse(t *testing.T) {
 	Assert(ok, true)
 	Assert(a[1], nil)
 
+	file, err = os.Open("map.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	reader = bufio.NewReader(file)
+	u := Parse(reader)
+	m, ok := u.(map[string] interface {})
+	Assert(ok, true)
+	Assert(len(m), 1)
+	Assert(m["a"], "b")
+
     // t.Fail()
 }
