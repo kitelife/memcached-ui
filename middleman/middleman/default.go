@@ -6,19 +6,23 @@ import (
 
 type DefaultMiddleman struct{}
 
-func (dmm DefaultMiddleman) GenInnerKey(key string, config interface{}) string {
+func (dmm *DefaultMiddleman) Config(config map[string]string) bool {
+	return true
+}
+
+func (dmm DefaultMiddleman) GenInnerKey(key string) string {
 	return key
 }
 
-func (dmm DefaultMiddleman) SerializeValue(value string, config interface{}) string {
+func (dmm DefaultMiddleman) SerializeValue(value string) string {
 	return value
 }
 
-func (dmm DefaultMiddleman) UnserializeValue(value string, config interface{}) string {
+func (dmm DefaultMiddleman) UnserializeValue(value string) interface{} {
 	return value
 }
 
 func init() {
-	defaultMiddleman := DefaultMiddleman{}
+	defaultMiddleman := new(DefaultMiddleman)
 	manager.MiddlemanRegister("default", defaultMiddleman)
 }

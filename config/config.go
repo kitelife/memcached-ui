@@ -8,7 +8,7 @@ import (
 type ServerConfig struct {
 	Alias           string
 	MiddlemanName   string
-	MiddlemanConfig interface{}
+	MiddlemanConfig map[string]string
 }
 
 type AppConfigStruct struct {

@@ -1,9 +1,7 @@
 package controller
 
 import (
-	//"crypto/md5"
 	"fmt"
-	//"hash/crc32"
 	"net/http"
 	"strconv"
 	"strings"
@@ -44,16 +42,6 @@ func getAppConfig(c *gin.Context) config.AppConfigStruct {
 	appConf, _ := c.Get("app_conf")
 	return appConf.(config.AppConfigStruct)
 }
-
-/*
-func genYiiKey(key string, yiiConf config.YiiConfigStruct) string {
-	innerKey := fmt.Sprintf("%x", crc32.ChecksumIEEE([]byte(yiiConf.AppName))) + key
-	if yiiConf.Hash == "yes" {
-		innerKey = fmt.Sprintf("%x", md5.Sum([]byte(innerKey)))
-	}
-	return innerKey
-}
-*/
 
 func newMemcached(server string) (memcached.Memcached, error) {
 	serverParts := strings.Split(server, ":")
@@ -168,15 +156,14 @@ func Do(c *gin.Context) {
 	defer m.Close()
 
 	targetServerConfig := ac.Servers[targetServer]
-	targetMiddleman, ok := MiddlemanManager.Middlemen[targetServerConfig.MiddlemanName]
-	if ok == false {
-		targetMiddleman = MiddlemanManager.Middlemen["default"]
+	targetMiddleman := MiddlemanManager.Get(targetServerConfig.MiddlemanName, targetServerConfig.MiddlemanConfig)
+	if targetMiddleman == nil {
+		targetMiddleman = MiddlemanManager.Get("default", nil)
 	}
-	targetMiddlemanConfig := targetServerConfig.MiddlemanConfig
 
 	switch {
 	case targetAction == "get":
-		key := targetMiddleman.GenInnerKey(c.PostForm("key"), targetMiddlemanConfig)
+		key := targetMiddleman.GenInnerKey(c.PostForm("key"))
 		resp, err := m.Get(key)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
@@ -187,12 +174,12 @@ func Do(c *gin.Context) {
 		}
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",
-			"data":   targetMiddleman.UnserializeValue(resp, targetMiddlemanConfig),
+			"data":   targetMiddleman.UnserializeValue(resp),
 		})
 		return
 	case targetAction == "set":
-		key := targetMiddleman.GenInnerKey(c.PostForm("key"), targetMiddlemanConfig)
-		value := targetMiddleman.SerializeValue(c.PostForm("value"), targetMiddlemanConfig)
+		key := targetMiddleman.GenInnerKey(c.PostForm("key"))
+		value := targetMiddleman.SerializeValue(c.PostForm("value"))
 		expTime := c.DefaultPostForm("exp_time", "0")
 		expTimeInt, err := strconv.Atoi(expTime)
 		if err != nil {
@@ -211,7 +198,7 @@ func Do(c *gin.Context) {
 			"data":   string(resp),
 		})
 	case targetAction == "delete":
-		key := targetMiddleman.GenInnerKey(c.PostForm("key"), targetMiddlemanConfig)
+		key := targetMiddleman.GenInnerKey(c.PostForm("key"))
 		resp, err := m.Delete(key)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
