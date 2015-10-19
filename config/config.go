@@ -5,17 +5,17 @@ import (
 	"io/ioutil"
 )
 
-type ServerConfig struct {
+type InstanceConfig struct {
 	Source          string
 	MiddlemanName   string
 	MiddlemanConfig map[string]string
 }
 
-type MUConfigStruct struct {
-	Servers map[string]ServerConfig
+type AppConfigStruct struct {
+	Instances map[string]InstanceConfig
 }
 
-func LoadMUConfig(configPath string) (conf MUConfigStruct, err error) {
+func LoadAppConfig(configPath string) (conf AppConfigStruct, err error) {
 	confContent, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		return conf, err

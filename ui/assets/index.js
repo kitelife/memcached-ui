@@ -10,7 +10,7 @@ $(function(){
     $("#action_result").html('<label>结果</label>：' + toShow);
   }
 
-  var targetApp = $("#target_app").val();
+  var targetInstance = $("#target_instance").val();
 
   var actionGetVM = new Vue({
     el: "#action_get",
@@ -29,7 +29,7 @@ $(function(){
             url: '/do',
             data: {
                 action: "get",
-                app: targetApp,
+                instance: targetInstance,
                 key: myself.k
             },
             dataType: 'json'
@@ -55,7 +55,7 @@ $(function(){
             url: '/do',
             data: {
                 action: "set",
-                app: targetApp,
+                instance: targetInstance,
                 key: myself.k,
                 value: myself.v,
                 exp_time: myself.expTime
@@ -81,7 +81,7 @@ $(function(){
             url: '/do',
             data: {
                 action: "delete",
-                app: targetApp,
+                instance: targetInstance,
                 key: myself.k
             },
             dataType: 'json'
@@ -104,7 +104,7 @@ $(function(){
             url: '/do',
             data: {
                 action: "flush_all",
-                app: targetApp,
+                instance: targetInstance,
             },
             dataType: 'json'
         });

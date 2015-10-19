@@ -14,8 +14,8 @@ import (
 )
 
 type StatsInfoStruct struct {
-	App             string
-	Server          string
+	InstanceID      string
+	Source          string
 	Pid             string
 	Version         string
 	Uptime          string
@@ -38,9 +38,9 @@ func validAction(targetAction string) bool {
 	return false
 }
 
-func getMUConfig(c *gin.Context) config.MUConfigStruct {
-	muConf, _ := c.Get("mu_conf")
-	return muConf.(config.MUConfigStruct)
+func getAppConfig(c *gin.Context) config.AppConfigStruct {
+	appConf, _ := c.Get("app_conf")
+	return appConf.(config.AppConfigStruct)
 }
 
 func newMemcached(server string) (memcached.Memcached, error) {
@@ -95,43 +95,43 @@ func statsMap2Struct(statsMapper map[string]string) StatsInfoStruct {
 }
 
 func Home(c *gin.Context) {
-	muc := getMUConfig(c)
+	ac := getAppConfig(c)
 
 	hostPortList := make([]string, 0, 100)
-	for k, _ := range muc.Servers {
+	for k, _ := range ac.Instances {
 		hostPortList = append(hostPortList, k)
 	}
 
-	targetApp := c.Query("app")
-	if _, ok := muc.Servers[targetApp]; ok == false {
-		targetApp = hostPortList[0]
+	instanceID := c.Query("instance")
+	if _, ok := ac.Instances[instanceID]; ok == false {
+		instanceID = hostPortList[0]
 	}
-	targetServer := muc.Servers[targetApp].Source
+	targetSource := ac.Instances[instanceID].Source
 
 	infoErr := ""
 	hasInfoErr := false
-	statsInfo, err := getStatsInfo(targetServer)
+	statsInfo, err := getStatsInfo(targetSource)
 	if err != nil {
 		infoErr = err.Error()
 		hasInfoErr = true
 	}
 	structedStatsInfo := statsMap2Struct(statsInfo)
-	structedStatsInfo.App = targetApp
-	structedStatsInfo.Server = targetServer
+	structedStatsInfo.InstanceID = instanceID
+	structedStatsInfo.Source = targetSource
 
 	c.HTML(http.StatusOK, "index.html", gin.H{
 		"HasInfoErr": hasInfoErr,
 		"InfoErr":    infoErr,
-		"Servers":    muc.Servers,
+		"Instances":  ac.Instances,
 		"StatsInfo":  structedStatsInfo,
 	})
 }
 
 func Do(c *gin.Context) {
-	muc := getMUConfig(c)
+	ac := getAppConfig(c)
 
-	targetApp := c.PostForm("app")
-	if _, ok := muc.Servers[targetApp]; ok == false {
+	instanceID := c.PostForm("instance")
+	if _, ok := ac.Instances[instanceID]; ok == false {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "failure",
 			"msg":    "不存在目标应用",
@@ -146,7 +146,7 @@ func Do(c *gin.Context) {
 		})
 		return
 	}
-	m, err := newMemcached(muc.Servers[targetApp].Source)
+	m, err := newMemcached(ac.Instances[instanceID].Source)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "failure",
@@ -156,8 +156,8 @@ func Do(c *gin.Context) {
 	}
 	defer m.Close()
 
-	targetAppConfig := muc.Servers[targetApp]
-	targetMiddleman := MiddlemanManager.Get(targetAppConfig.MiddlemanName, targetAppConfig.MiddlemanConfig)
+	targetInstanceConfig := ac.Instances[instanceID]
+	targetMiddleman := MiddlemanManager.Get(targetInstanceConfig.MiddlemanName, targetInstanceConfig.MiddlemanConfig)
 	if targetMiddleman == nil {
 		targetMiddleman = MiddlemanManager.Get("default", nil)
 	}
