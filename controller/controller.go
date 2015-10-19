@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"fmt"
 	"bufio"
+	"encoding/json"
 	"hash/crc32"
 	"net/http"
 	"strconv"
@@ -187,8 +188,16 @@ func Do(c *gin.Context) {
 			return
 		}
 		var data interface{}
-		if len(resp) > 0 && resp[0] == 'a' && resp[1] == ':' {
+		// 仅自动解析 PHP `serialize()`ed Array
+		if len(resp) > 2 && resp[0] == 'a' && resp[1] == ':' {
 			data = phpunserialize.Parse(bufio.NewReader(strings.NewReader(resp)))
+			// Yii 模式下自动提取 JSON
+			if (useYii && len(data.([]interface{})) == 2 && data.([]interface{})[0].(string)[0] == '{') {
+				err := json.Unmarshal([]byte(data.([]interface{})[0].(string)), &(data.([]interface{})[0]))
+				if err != nil {
+					fmt.Println("error:", err)
+				}
+			}
 		} else {
 			data = string(resp)
 		}

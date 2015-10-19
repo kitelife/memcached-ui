@@ -7,6 +7,10 @@ $(function(){
       if (typeof data === 'string') {
         toShow = data;
       } else {
+        // support Yii
+        if (data.length === 2 && data[1] === null) {
+          data = data[0];
+        };
         toShow = '<br><pre>'+JSON.stringify(data, null, 2)+'</pre>';
       }
     } else {
