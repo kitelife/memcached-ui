@@ -1,9 +1,9 @@
 package controller
 
 import (
-	"crypto/md5"
+	//"crypto/md5"
 	"fmt"
-	"hash/crc32"
+	//"hash/crc32"
 	"net/http"
 	"strconv"
 	"strings"
@@ -11,6 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/youngsterxyf/memcached-ui/config"
 	"github.com/youngsterxyf/memcached-ui/memcached"
+	MiddlemanManager "github.com/youngsterxyf/memcached-ui/middleman/manager"
+	_ "github.com/youngsterxyf/memcached-ui/middleman/middleman"
 )
 
 type StatsInfoStruct struct {
@@ -43,6 +45,7 @@ func getAppConfig(c *gin.Context) config.AppConfigStruct {
 	return appConf.(config.AppConfigStruct)
 }
 
+/*
 func genYiiKey(key string, yiiConf config.YiiConfigStruct) string {
 	innerKey := fmt.Sprintf("%x", crc32.ChecksumIEEE([]byte(yiiConf.AppName))) + key
 	if yiiConf.Hash == "yes" {
@@ -50,6 +53,7 @@ func genYiiKey(key string, yiiConf config.YiiConfigStruct) string {
 	}
 	return innerKey
 }
+*/
 
 func newMemcached(server string) (memcached.Memcached, error) {
 	serverParts := strings.Split(server, ":")
@@ -163,19 +167,16 @@ func Do(c *gin.Context) {
 	}
 	defer m.Close()
 
-	// 是否支持Yii使用缓存的方式
-	useYii := false
 	targetServerConfig := ac.Servers[targetServer]
-	if targetServerConfig.Yii.Status == "on" {
-		useYii = true
+	targetMiddleman, ok := MiddlemanManager.Middlemen[targetServerConfig.MiddlemanName]
+	if ok == false {
+		targetMiddleman = MiddlemanManager.Middlemen["default"]
 	}
+	targetMiddlemanConfig := targetServerConfig.MiddlemanConfig
 
 	switch {
 	case targetAction == "get":
-		key := c.PostForm("key")
-		if useYii {
-			key = genYiiKey(key, targetServerConfig.Yii)
-		}
+		key := targetMiddleman.GenInnerKey(c.PostForm("key"), targetMiddlemanConfig)
 		resp, err := m.Get(key)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
@@ -186,15 +187,12 @@ func Do(c *gin.Context) {
 		}
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",
-			"data":   string(resp),
+			"data":   targetMiddleman.UnserializeValue(resp, targetMiddlemanConfig),
 		})
 		return
 	case targetAction == "set":
-		key := c.PostForm("key")
-		if useYii {
-			key = genYiiKey(key, targetServerConfig.Yii)
-		}
-		value := c.PostForm("value")
+		key := targetMiddleman.GenInnerKey(c.PostForm("key"), targetMiddlemanConfig)
+		value := targetMiddleman.SerializeValue(c.PostForm("value"), targetMiddlemanConfig)
 		expTime := c.DefaultPostForm("exp_time", "0")
 		expTimeInt, err := strconv.Atoi(expTime)
 		if err != nil {
@@ -213,10 +211,7 @@ func Do(c *gin.Context) {
 			"data":   string(resp),
 		})
 	case targetAction == "delete":
-		key := c.PostForm("key")
-		if useYii {
-			key = genYiiKey(key, targetServerConfig.Yii)
-		}
+		key := targetMiddleman.GenInnerKey(c.PostForm("key"), targetMiddlemanConfig)
 		resp, err := m.Delete(key)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
