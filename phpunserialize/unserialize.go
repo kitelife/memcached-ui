@@ -23,18 +23,47 @@ type ArrayItem struct {
 func parseArrayItem(reader *bufio.Reader) (ai ArrayItem) {
 	ai.key = Parse(reader)
 	ai.value = Parse(reader)
-	fmt.Printf("%q => %q\n", ai.key, ai.value)
+	// fmt.Printf("%q => %q\n", ai.key, ai.value)
 	return ai
 }
-func parseArrayBody(reader *bufio.Reader, arraylen uint64) (res []interface{}) {
+func parseArrayBody(reader *bufio.Reader, arraylen uint64) (res interface{}) {
 	_, err := reader.ReadString('{')
 	if err != nil {
 		log.Fatal(err)
 	}
-	for i:=0; i < int(arraylen); i++ {
-		ArrayItem := parseArrayItem(reader)
-		res = append(res, ArrayItem)
+	item := parseArrayItem(reader)
+	var t interface{}
+	t = item.key
+	var arr []interface{}
+	var m map[string]interface{}
+	switch t := t.(type) {
+		default:
+			fmt.Printf("unexpected type %T\n", t)     // %T prints whatever type t has
+			log.Fatal("unexpected type ", t)
+		case int64:
+			fmt.Printf("boolean %t\n", t)             // t has type bool
+			if (int(item.key.(int64)) != 0) {
+				log.Fatal("we do not support array not start with 0, but ", item.key)
+			}
+			arr = append(arr, item.value)
+			for i:=1; i < int(arraylen); i++ {
+				item = parseArrayItem(reader)
+				if int(item.key.(int64)) != i {
+					log.Fatal("we do not support that type array ", item.key, i)
+				}
+				arr = append(arr, item.value)
+			}
+			return arr
+		case string:
+			fmt.Printf("integer %d\n", t)             // t has type int
+			for i:=1; i < int(arraylen); i++ {
+				item = parseArrayItem(reader)
+				k := item.key.(string)
+				m[k] = item.value
+			}
+			return m
 	}
+
 	_, err = reader.ReadString('}')
 	if err != nil {
 		log.Fatal(err)
@@ -53,13 +82,17 @@ func parseLen(reader *bufio.Reader) uint64 {
 	}
 	return ilen
 }
-func parseArray(reader *bufio.Reader) []interface{} {
+func parseArray(reader *bufio.Reader) (interface{}) {
 	arraylen := parseLen(reader)
+	var res []interface{}
+	if arraylen == 0 {
+		return res
+	}
 	return parseArrayBody(reader, arraylen)
 }
 func parseString(reader *bufio.Reader) string {
 	strlen := parseLen(reader)
-	fmt.Printf("prepare to read string(%d)\n", strlen)
+	// fmt.Printf("prepare to read string(%d)\n", strlen)
 	ReadByteEnsure(reader, '"')
 
 	var p [1000]byte
@@ -70,7 +103,7 @@ func parseString(reader *bufio.Reader) string {
 	if n != int(strlen) {
 		log.Fatal("want to read ", strlen, ", but read ", n)
 	}
-	fmt.Printf("%s\n", string(p[:strlen]))
+	// fmt.Printf("%s\n", string(p[:strlen]))
 	ReadByteEnsure(reader, '"')
 	ReadByteEnsure(reader, ';')
 	return string(p[0:strlen])
@@ -112,7 +145,7 @@ func parseBool(reader *bufio.Reader) bool {
 	return false
 }
 func ReadByteEnsure(reader *bufio.Reader, c byte) (error) {
-	fmt.Printf("must be '%c'\n", c)
+	// fmt.Printf("must be '%c'\n", c)
 	s, err := reader.ReadByte()
 	if err != nil {
 		return err
