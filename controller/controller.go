@@ -96,15 +96,18 @@ func statsMap2Struct(statsMapper map[string]string) StatsInfoStruct {
 
 	GetHits :=         statsMapper["get_hits"]
 	GetMisses :=       statsMapper["get_misses"]
-	h, err := strconv.Atoi(GetHits)
-	if err != nil {
-		log.Fatal(err)
+	GetRate := "0"
+	if len(GetHits) > 0 && len(GetMisses) > 0 {
+		h, err := strconv.Atoi(GetHits)
+		if err != nil {
+			log.Fatal(err)
+		}
+		m, err := strconv.Atoi(GetMisses)
+		if err != nil {
+			log.Fatal(err)
+		}
+		GetRate = strconv.FormatFloat(float64(h) / float64(m+h) * 100, 'f', 1, 64)
 	}
-	m, err := strconv.Atoi(GetMisses)
-	if err != nil {
-		log.Fatal(err)
-	}
-	GetRate := strconv.FormatFloat(float64(h) / float64(m+h) * 100, 'f', 1, 64)
 	return StatsInfoStruct{
 		Pid:             statsMapper["pid"],
 		Version:         statsMapper["version"],
