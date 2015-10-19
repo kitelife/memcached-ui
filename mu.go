@@ -10,18 +10,18 @@ import (
 )
 
 const (
-	APP_CONFIG_PATH = "./app.json"
+	MU_CONFIG_PATH = "./app.json"
 )
 
-func appConfigMiddleware(conf config.AppConfigStruct) gin.HandlerFunc {
+func muConfigMiddleware(conf config.MUConfigStruct) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Set("app_conf", conf)
+		c.Set("mu_conf", conf)
 		c.Next()
 	}
 }
 
 func main() {
-	appConfig, err := config.LoadAppConfig(APP_CONFIG_PATH)
+	muConfig, err := config.LoadMUConfig(MU_CONFIG_PATH)
 	if err != nil {
 		fmt.Println("发生错误：", err.Error())
 		os.Exit(-1)
@@ -30,7 +30,7 @@ func main() {
 	r := gin.Default()
 	r.Static("/assets", "./ui/assets")
 	r.LoadHTMLGlob("ui/templates/*")
-	r.Use(appConfigMiddleware(appConfig))
+	r.Use(muConfigMiddleware(muConfig))
 
 	r.GET("/", controller.Home)
 	r.POST("/do", controller.Do)

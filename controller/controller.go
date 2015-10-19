@@ -14,7 +14,7 @@ import (
 )
 
 type StatsInfoStruct struct {
-	Id              string
+	App             string
 	Server          string
 	Pid             string
 	Version         string
@@ -38,9 +38,9 @@ func validAction(targetAction string) bool {
 	return false
 }
 
-func getAppConfig(c *gin.Context) config.AppConfigStruct {
-	appConf, _ := c.Get("app_conf")
-	return appConf.(config.AppConfigStruct)
+func getMUConfig(c *gin.Context) config.MUConfigStruct {
+	muConf, _ := c.Get("mu_conf")
+	return muConf.(config.MUConfigStruct)
 }
 
 func newMemcached(server string) (memcached.Memcached, error) {
@@ -95,17 +95,18 @@ func statsMap2Struct(statsMapper map[string]string) StatsInfoStruct {
 }
 
 func Home(c *gin.Context) {
-	ac := getAppConfig(c)
+	muc := getMUConfig(c)
 
 	hostPortList := make([]string, 0, 100)
-	for k, _ := range ac.Servers {
+	for k, _ := range muc.Servers {
 		hostPortList = append(hostPortList, k)
 	}
 
-	targetServer := c.Query("server")
-	if _, ok := ac.Servers[targetServer]; ok == false {
-		targetServer = hostPortList[0]
+	targetApp := c.Query("app")
+	if _, ok := muc.Servers[targetApp]; ok == false {
+		targetApp = hostPortList[0]
 	}
+	targetServer := muc.Servers[targetApp].Source
 
 	infoErr := ""
 	hasInfoErr := false
@@ -115,25 +116,25 @@ func Home(c *gin.Context) {
 		hasInfoErr = true
 	}
 	structedStatsInfo := statsMap2Struct(statsInfo)
+	structedStatsInfo.App = targetApp
 	structedStatsInfo.Server = targetServer
-	structedStatsInfo.Id = ac.Servers[targetServer].Alias
 
 	c.HTML(http.StatusOK, "index.html", gin.H{
 		"HasInfoErr": hasInfoErr,
 		"InfoErr":    infoErr,
-		"Servers":    ac.Servers,
+		"Servers":    muc.Servers,
 		"StatsInfo":  structedStatsInfo,
 	})
 }
 
 func Do(c *gin.Context) {
-	ac := getAppConfig(c)
+	muc := getMUConfig(c)
 
-	targetServer := c.PostForm("server")
-	if _, ok := ac.Servers[targetServer]; ok == false {
+	targetApp := c.PostForm("app")
+	if _, ok := muc.Servers[targetApp]; ok == false {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "failure",
-			"msg":    "不存在目标Memcached服务",
+			"msg":    "不存在目标应用",
 		})
 		return
 	}
@@ -145,7 +146,7 @@ func Do(c *gin.Context) {
 		})
 		return
 	}
-	m, err := newMemcached(targetServer)
+	m, err := newMemcached(muc.Servers[targetApp].Source)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "failure",
@@ -155,8 +156,8 @@ func Do(c *gin.Context) {
 	}
 	defer m.Close()
 
-	targetServerConfig := ac.Servers[targetServer]
-	targetMiddleman := MiddlemanManager.Get(targetServerConfig.MiddlemanName, targetServerConfig.MiddlemanConfig)
+	targetAppConfig := muc.Servers[targetApp]
+	targetMiddleman := MiddlemanManager.Get(targetAppConfig.MiddlemanName, targetAppConfig.MiddlemanConfig)
 	if targetMiddleman == nil {
 		targetMiddleman = MiddlemanManager.Get("default", nil)
 	}

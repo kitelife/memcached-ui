@@ -6,16 +6,16 @@ import (
 )
 
 type ServerConfig struct {
-	Alias           string
+	Source          string
 	MiddlemanName   string
 	MiddlemanConfig map[string]string
 }
 
-type AppConfigStruct struct {
+type MUConfigStruct struct {
 	Servers map[string]ServerConfig
 }
 
-func LoadAppConfig(configPath string) (conf AppConfigStruct, err error) {
+func LoadMUConfig(configPath string) (conf MUConfigStruct, err error) {
 	confContent, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		return conf, err
