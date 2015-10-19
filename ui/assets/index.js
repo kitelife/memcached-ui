@@ -7,9 +7,8 @@ $(function(){
       if (typeof data === 'string') {
         toShow = data;
       } else {
-        toShow = JSON.stringy(data);
+        toShow = '<br><pre>'+JSON.stringify(data, null, 2)+'</pre>';
       }
-      toShow = $resp.data;
     } else {
       toShow = $resp.msg;
     }
