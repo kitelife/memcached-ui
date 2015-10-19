@@ -44,9 +44,9 @@ func getAppConfig(c *gin.Context) config.AppConfigStruct {
 	return appConf.(config.AppConfigStruct)
 }
 
-func genYiiKey(key string, yiiConf map[string]string) string {
-	innerKey := fmt.Sprintf("%x", crc32.ChecksumIEEE([]byte(yiiConf["app_name"]))) + key
-	if yiiConf["hash"] == "yes" {
+func genYiiKey(key string, yiiConf config.YiiConfigStruct) string {
+	innerKey := fmt.Sprintf("%x", crc32.ChecksumIEEE([]byte(yiiConf.AppName))) + key
+	if yiiConf.Hash == "yes" {
 		innerKey = fmt.Sprintf("%x", md5.Sum([]byte(innerKey)))
 	}
 	return innerKey
@@ -125,7 +125,7 @@ func Home(c *gin.Context) {
 	}
 	structedStatsInfo := statsMap2Struct(statsInfo)
 	structedStatsInfo.Server = targetServer
-	structedStatsInfo.Id = ac.Servers[targetServer]
+	structedStatsInfo.Id = ac.Servers[targetServer].Alias
 
 	c.HTML(http.StatusOK, "index.html", gin.H{
 		"HasInfoErr": hasInfoErr,
@@ -166,7 +166,8 @@ func Do(c *gin.Context) {
 
 	// 是否支持Yii使用缓存的方式
 	useYii := false
-	if ac.Yii["status"] == "on" {
+	targetServerConfig := ac.Servers[targetServer]
+	if targetServerConfig.Yii.Status == "on" {
 		useYii = true
 	}
 
@@ -174,7 +175,7 @@ func Do(c *gin.Context) {
 	case targetAction == "get":
 		key := c.PostForm("key")
 		if useYii {
-			key = genYiiKey(key, ac.Yii)
+			key = genYiiKey(key, targetServerConfig.Yii)
 		}
 		resp, err := m.Get(key)
 		if err != nil {
@@ -198,7 +199,7 @@ func Do(c *gin.Context) {
 	case targetAction == "set":
 		key := c.PostForm("key")
 		if useYii {
-			key = genYiiKey(key, ac.Yii)
+			key = genYiiKey(key, targetServerConfig.Yii)
 		}
 		value := c.PostForm("value")
 		expTime := c.DefaultPostForm("exp_time", "0")
@@ -221,7 +222,7 @@ func Do(c *gin.Context) {
 	case targetAction == "delete":
 		key := c.PostForm("key")
 		if useYii {
-			key = genYiiKey(key, ac.Yii)
+			key = genYiiKey(key, targetServerConfig.Yii)
 		}
 		resp, err := m.Delete(key)
 		if err != nil {
