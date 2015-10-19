@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"flag"
 
 	"github.com/gin-gonic/gin"
 	"github.com/youngsterxyf/memcached-ui/config"
@@ -34,5 +35,9 @@ func main() {
 
 	r.GET("/", controller.Home)
 	r.POST("/do", controller.Do)
-	r.Run(":8080")
+
+	var port string
+	flag.StringVar(&port, "listen", ":8080", "listen address")
+	flag.Parse()
+	r.Run(port)
 }
