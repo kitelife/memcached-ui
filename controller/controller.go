@@ -193,10 +193,13 @@ func Do(c *gin.Context) {
 		if len(resp) > 2 && resp[0] == 'a' && resp[1] == ':' {
 			data = phpunserialize.Parse(bufio.NewReader(strings.NewReader(resp)))
 			// Yii 模式下自动提取 JSON
-			if (useYii && len(data.([]interface{})) == 2 && data.([]interface{})[0].(string)[0] == '{') {
-				err := json.Unmarshal([]byte(data.([]interface{})[0].(string)), &(data.([]interface{})[0]))
-				if err != nil {
-					fmt.Println("error:", err)
+			if (useYii && len(data.([]interface{})) == 2) {
+				mainstr, ok := data.([]interface{})[0].(string)
+				if (ok && len(mainstr) >= 2 && (mainstr[0] == '{' || mainstr[0] == '[')) {
+					err := json.Unmarshal([]byte(mainstr), &(data.([]interface{})[0]))
+					if err != nil {
+						fmt.Println("error:", err)
+					}
 				}
 			}
 		} else {
