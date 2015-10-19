@@ -27,10 +27,7 @@ func parseArrayItem(reader *bufio.Reader) (ai ArrayItem) {
 	return ai
 }
 func parseArrayBody(reader *bufio.Reader, arraylen uint64) (res interface{}) {
-	_, err := reader.ReadString('{')
-	if err != nil {
-		log.Fatal(err)
-	}
+	ReadByteEnsure(reader, '{')
 	item := parseArrayItem(reader)
 	var t interface{}
 	t = item.key
@@ -53,7 +50,7 @@ func parseArrayBody(reader *bufio.Reader, arraylen uint64) (res interface{}) {
 				}
 				arr = append(arr, item.value)
 			}
-			return arr
+			res = arr
 		case string:
 			fmt.Printf("string %d\n", t)             // t has type string
 			m[item.key.(string)] = item.value
@@ -62,13 +59,10 @@ func parseArrayBody(reader *bufio.Reader, arraylen uint64) (res interface{}) {
 				k := item.key.(string)
 				m[k] = item.value
 			}
-			return m
+			res = m
 	}
 
-	_, err = reader.ReadString('}')
-	if err != nil {
-		log.Fatal(err)
-	}
+	ReadByteEnsure(reader, '}')
 	return res
 }
 func parseLen(reader *bufio.Reader) uint64 {

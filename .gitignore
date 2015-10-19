@@ -1,3 +1,4 @@
 ui/assets/lib/
 Godeps/_workspace/
 *.exe
+app.json
