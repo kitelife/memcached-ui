@@ -11,9 +11,9 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/youngsterxyf/memcached-ui/config"
-	"github.com/youngsterxyf/memcached-ui/memcached"
-	"github.com/youngsterxyf/memcached-ui/phpunserialize"
+	"github.com/picasso250/memcached-ui/config"
+	"github.com/picasso250/memcached-ui/memcached"
+	"github.com/picasso250/memcached-ui/phpunserialize"
 )
 
 type StatsInfoStruct struct {
@@ -193,8 +193,9 @@ func Do(c *gin.Context) {
 		if len(resp) > 2 && resp[0] == 'a' && resp[1] == ':' {
 			data = phpunserialize.Parse(bufio.NewReader(strings.NewReader(resp)))
 			// Yii 模式下自动提取 JSON
-			if (useYii && len(data.([]interface{})) == 2) {
-				mainstr, ok := data.([]interface{})[0].(string)
+			arr, ok := data.([]interface{})
+			if (useYii && ok && len(arr) == 2) {
+				mainstr, ok := arr[0].(string)
 				if (ok && len(mainstr) >= 2 && (mainstr[0] == '{' || mainstr[0] == '[')) {
 					err := json.Unmarshal([]byte(mainstr), &(data.([]interface{})[0]))
 					if err != nil {
