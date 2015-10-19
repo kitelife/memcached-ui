@@ -6,8 +6,8 @@ import (
 	"flag"
 
 	"github.com/gin-gonic/gin"
-	"github.com/youngsterxyf/memcached-ui/config"
-	"github.com/youngsterxyf/memcached-ui/controller"
+	"github.com/picasso250/memcached-ui/config"
+	"github.com/picasso250/memcached-ui/controller"
 )
 
 const (

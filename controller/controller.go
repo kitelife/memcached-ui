@@ -3,6 +3,7 @@ package controller
 import (
 	"crypto/md5"
 	"fmt"
+	"log"
 	"bufio"
 	"encoding/json"
 	"hash/crc32"
@@ -28,6 +29,7 @@ type StatsInfoStruct struct {
 	CurrConnections string
 	GetHits         string
 	GetMisses       string
+	GetRate         string
 }
 
 var actionAllowed []string = []string{"get", "set", "delete", "flush_all"}
@@ -92,6 +94,17 @@ func statsMap2Struct(statsMapper map[string]string) StatsInfoStruct {
 	maxMemoryLimit, _ := strconv.Atoi(statsMapper["limit_maxbytes"])
 	currMemoryUsage, _ := strconv.Atoi(statsMapper["bytes"])
 
+	GetHits :=         statsMapper["get_hits"]
+	GetMisses :=       statsMapper["get_misses"]
+	h, err := strconv.Atoi(GetHits)
+	if err != nil {
+		log.Fatal(err)
+	}
+	m, err := strconv.Atoi(GetMisses)
+	if err != nil {
+		log.Fatal(err)
+	}
+	GetRate := strconv.FormatFloat(float64(h) / float64(m+h) * 100, 'f', 1, 64)
 	return StatsInfoStruct{
 		Pid:             statsMapper["pid"],
 		Version:         statsMapper["version"],
@@ -100,8 +113,9 @@ func statsMap2Struct(statsMapper map[string]string) StatsInfoStruct {
 		CurrMemoryUsage: formatMemoryUsage(currMemoryUsage),
 		CurrItems:       statsMapper["curr_items"],
 		CurrConnections: statsMapper["curr_connections"],
-		GetHits:         statsMapper["get_hits"],
-		GetMisses:       statsMapper["get_misses"],
+		GetHits:         GetHits,
+		GetMisses:       GetMisses,
+		GetRate:         GetRate,
 	}
 }
 
