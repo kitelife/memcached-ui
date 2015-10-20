@@ -3,9 +3,13 @@ package middleman
 import (
 	"crypto/md5"
 	"fmt"
+	"bufio"
+	"strings"
+	"encoding/json"
 	"hash/crc32"
 
-	"github.com/youngsterxyf/memcached-ui/middleman/manager"
+	"github.com/picasso250/memcached-ui/middleman/manager"
+	"github.com/picasso250/memcached-ui/phpunserialize"
 )
 
 type YiiMiddleman struct {
@@ -30,7 +34,25 @@ func (ymm YiiMiddleman) SerializeValue(value string) string {
 }
 
 func (ymm YiiMiddleman) UnserializeValue(value string) interface{} {
-	return value
+	var data interface{}
+	// 仅自动解析 PHP `serialize()`ed Array
+	if len(value) > 2 && value[0] == 'a' && value[1] == ':' {
+		data = phpunserialize.Parse(bufio.NewReader(strings.NewReader(value)))
+		// Yii 模式下自动提取 JSON
+		arr, ok := data.([]interface{})
+		if (ok && len(arr) == 2) {
+			mainstr, ok := arr[0].(string)
+			if (ok && len(mainstr) >= 2 && (mainstr[0] == '{' || mainstr[0] == '[')) {
+				err := json.Unmarshal([]byte(mainstr), &(data.([]interface{})[0]))
+				if err != nil {
+					fmt.Println("error:", err)
+				}
+			}
+		}
+	} else {
+		data = (value)
+	}
+	return data
 }
 
 func init() {

@@ -3,9 +3,6 @@ package controller
 import (
 	"fmt"
 	"log"
-	"bufio"
-	"encoding/json"
-	"hash/crc32"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,9 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/picasso250/memcached-ui/config"
 	"github.com/picasso250/memcached-ui/memcached"
-	"github.com/picasso250/memcached-ui/phpunserialize"
-	MiddlemanManager "github.com/youngsterxyf/memcached-ui/middleman/manager"
-	_ "github.com/youngsterxyf/memcached-ui/middleman/middleman"
+	MiddlemanManager "github.com/picasso250/memcached-ui/middleman/manager"
+	_ "github.com/picasso250/memcached-ui/middleman/middleman"
 )
 
 type StatsInfoStruct struct {
@@ -194,27 +190,6 @@ func Do(c *gin.Context) {
 			})
 			return
 		}
-
-		// ==== wft?
-		var data interface{}
-		// 仅自动解析 PHP `serialize()`ed Array
-		if len(resp) > 2 && resp[0] == 'a' && resp[1] == ':' {
-			data = phpunserialize.Parse(bufio.NewReader(strings.NewReader(resp)))
-			// Yii 模式下自动提取 JSON
-			arr, ok := data.([]interface{})
-			if (useYii && ok && len(arr) == 2) {
-				mainstr, ok := arr[0].(string)
-				if (ok && len(mainstr) >= 2 && (mainstr[0] == '{' || mainstr[0] == '[')) {
-					err := json.Unmarshal([]byte(mainstr), &(data.([]interface{})[0]))
-					if err != nil {
-						fmt.Println("error:", err)
-					}
-				}
-			}
-		} else {
-			data = string(resp)
-		}
-		// ==== end
 
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",

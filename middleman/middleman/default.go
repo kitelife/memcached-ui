@@ -1,7 +1,7 @@
 package middleman
 
 import (
-	"github.com/youngsterxyf/memcached-ui/middleman/manager"
+	"github.com/picasso250/memcached-ui/middleman/manager"
 )
 
 type DefaultMiddleman struct{}
