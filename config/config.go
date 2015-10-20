@@ -5,15 +5,10 @@ import (
 	"io/ioutil"
 )
 
-type YiiConfigStruct struct {
-	Status  string
-	AppName string
-	Hash    string
-}
-
 type ServerConfig struct {
-	Alias string
-	Yii   YiiConfigStruct
+	Alias           string
+	MiddlemanName   string
+	MiddlemanConfig interface{}
 }
 
 type AppConfigStruct struct {

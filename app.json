@@ -2,8 +2,8 @@
     "servers":{
         "127.0.0.1:11211": {
             "alias": "localhost",
-            "yii": {
-                "status": "on",
+            "middlemanName": "yii",
+            "middlemanConfig": {
                 "appName": "gxt",
                 "hash": "yes"
             }
