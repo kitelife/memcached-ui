@@ -1,7 +1,7 @@
 {
-    "servers":{
-        "127.0.0.1:11211": {
-            "alias": "localhost",
+    "instances":{
+        "localhost": {
+            "source": "127.0.0.1:11211",
             "middlemanName": "yii",
             "middlemanConfig": {
                 "appName": "gxt",

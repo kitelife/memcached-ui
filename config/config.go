@@ -5,14 +5,14 @@ import (
 	"io/ioutil"
 )
 
-type ServerConfig struct {
-	Alias           string
+type InstanceConfig struct {
+	Source          string
 	MiddlemanName   string
-	MiddlemanConfig interface{}
+	MiddlemanConfig map[string]string
 }
 
 type AppConfigStruct struct {
-	Servers map[string]ServerConfig
+	Instances map[string]InstanceConfig
 }
 
 func LoadAppConfig(configPath string) (conf AppConfigStruct, err error) {

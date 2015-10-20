@@ -1,7 +1,6 @@
 package controller
 
 import (
-	//"crypto/md5"
 	"fmt"
 	"log"
 	"bufio"
@@ -20,8 +19,8 @@ import (
 )
 
 type StatsInfoStruct struct {
-	Id              string
-	Server          string
+	InstanceID      string
+	Source          string
 	Pid             string
 	Version         string
 	Uptime          string
@@ -49,16 +48,6 @@ func getAppConfig(c *gin.Context) config.AppConfigStruct {
 	appConf, _ := c.Get("app_conf")
 	return appConf.(config.AppConfigStruct)
 }
-
-/*
-func genYiiKey(key string, yiiConf config.YiiConfigStruct) string {
-	innerKey := fmt.Sprintf("%x", crc32.ChecksumIEEE([]byte(yiiConf.AppName))) + key
-	if yiiConf.Hash == "yes" {
-		innerKey = fmt.Sprintf("%x", md5.Sum([]byte(innerKey)))
-	}
-	return innerKey
-}
-*/
 
 func newMemcached(server string) (memcached.Memcached, error) {
 	serverParts := strings.Split(server, ":")
@@ -130,30 +119,31 @@ func Home(c *gin.Context) {
 	ac := getAppConfig(c)
 
 	hostPortList := make([]string, 0, 100)
-	for k, _ := range ac.Servers {
+	for k, _ := range ac.Instances {
 		hostPortList = append(hostPortList, k)
 	}
 
-	targetServer := c.Query("server")
-	if _, ok := ac.Servers[targetServer]; ok == false {
-		targetServer = hostPortList[0]
+	instanceID := c.Query("instance")
+	if _, ok := ac.Instances[instanceID]; ok == false {
+		instanceID = hostPortList[0]
 	}
+	targetSource := ac.Instances[instanceID].Source
 
 	infoErr := ""
 	hasInfoErr := false
-	statsInfo, err := getStatsInfo(targetServer)
+	statsInfo, err := getStatsInfo(targetSource)
 	if err != nil {
 		infoErr = err.Error()
 		hasInfoErr = true
 	}
 	structedStatsInfo := statsMap2Struct(statsInfo)
-	structedStatsInfo.Server = targetServer
-	structedStatsInfo.Id = ac.Servers[targetServer].Alias
+	structedStatsInfo.InstanceID = instanceID
+	structedStatsInfo.Source = targetSource
 
 	c.HTML(http.StatusOK, "index.html", gin.H{
 		"HasInfoErr": hasInfoErr,
 		"InfoErr":    infoErr,
-		"Servers":    ac.Servers,
+		"Instances":  ac.Instances,
 		"StatsInfo":  structedStatsInfo,
 	})
 }
@@ -161,11 +151,11 @@ func Home(c *gin.Context) {
 func Do(c *gin.Context) {
 	ac := getAppConfig(c)
 
-	targetServer := c.PostForm("server")
-	if _, ok := ac.Servers[targetServer]; ok == false {
+	instanceID := c.PostForm("instance")
+	if _, ok := ac.Instances[instanceID]; ok == false {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "failure",
-			"msg":    "不存在目标Memcached服务",
+			"msg":    "不存在目标应用",
 		})
 		return
 	}
@@ -177,7 +167,7 @@ func Do(c *gin.Context) {
 		})
 		return
 	}
-	m, err := newMemcached(targetServer)
+	m, err := newMemcached(ac.Instances[instanceID].Source)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "failure",
@@ -187,16 +177,15 @@ func Do(c *gin.Context) {
 	}
 	defer m.Close()
 
-	targetServerConfig := ac.Servers[targetServer]
-	targetMiddleman, ok := MiddlemanManager.Middlemen[targetServerConfig.MiddlemanName]
-	if ok == false {
-		targetMiddleman = MiddlemanManager.Middlemen["default"]
+	targetInstanceConfig := ac.Instances[instanceID]
+	targetMiddleman := MiddlemanManager.Get(targetInstanceConfig.MiddlemanName, targetInstanceConfig.MiddlemanConfig)
+	if targetMiddleman == nil {
+		targetMiddleman = MiddlemanManager.Get("default", nil)
 	}
-	targetMiddlemanConfig := targetServerConfig.MiddlemanConfig
 
 	switch {
 	case targetAction == "get":
-		key := targetMiddleman.GenInnerKey(c.PostForm("key"), targetMiddlemanConfig)
+		key := targetMiddleman.GenInnerKey(c.PostForm("key"))
 		resp, err := m.Get(key)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
@@ -229,12 +218,12 @@ func Do(c *gin.Context) {
 
 		c.JSON(http.StatusOK, gin.H{
 			"status": "success",
-			"data":   targetMiddleman.UnserializeValue(resp, targetMiddlemanConfig),
+			"data":   targetMiddleman.UnserializeValue(resp),
 		})
 		return
 	case targetAction == "set":
-		key := targetMiddleman.GenInnerKey(c.PostForm("key"), targetMiddlemanConfig)
-		value := targetMiddleman.SerializeValue(c.PostForm("value"), targetMiddlemanConfig)
+		key := targetMiddleman.GenInnerKey(c.PostForm("key"))
+		value := targetMiddleman.SerializeValue(c.PostForm("value"))
 		expTime := c.DefaultPostForm("exp_time", "0")
 		expTimeInt, err := strconv.Atoi(expTime)
 		if err != nil {
@@ -253,7 +242,7 @@ func Do(c *gin.Context) {
 			"data":   string(resp),
 		})
 	case targetAction == "delete":
-		key := targetMiddleman.GenInnerKey(c.PostForm("key"), targetMiddlemanConfig)
+		key := targetMiddleman.GenInnerKey(c.PostForm("key"))
 		resp, err := m.Delete(key)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
