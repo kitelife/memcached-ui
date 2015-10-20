@@ -1,0 +1,12 @@
+{
+    "instances":{
+        "ui0-Yii": {
+            "source": "localhost:11211",
+            "middlemanName": "yii",
+            "middlemanConfig": {
+                "appName": "gxt",
+                "hash": "yes"
+            }
+        }
+    }
+}
