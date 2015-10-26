@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/picasso250/memcached-ui/config"
-	"github.com/picasso250/memcached-ui/memcached"
-	MiddlemanManager "github.com/picasso250/memcached-ui/middleman/manager"
-	_ "github.com/picasso250/memcached-ui/middleman/middleman"
+	"github.com/youngsterxyf/memcached-ui/config"
+	"github.com/youngsterxyf/memcached-ui/memcached"
+	MiddlemanManager "github.com/youngsterxyf/memcached-ui/middleman/manager"
+	_ "github.com/youngsterxyf/memcached-ui/middleman/middleman"
 )
 
 type StatsInfoStruct struct {
@@ -83,20 +83,23 @@ func statsMap2Struct(statsMapper map[string]string) StatsInfoStruct {
 	maxMemoryLimit, _ := strconv.Atoi(statsMapper["limit_maxbytes"])
 	currMemoryUsage, _ := strconv.Atoi(statsMapper["bytes"])
 
-	GetHits :=         statsMapper["get_hits"]
-	GetMisses :=       statsMapper["get_misses"]
+	GetHits := statsMapper["get_hits"]
+	GetMisses := statsMapper["get_misses"]
 	GetRate := "0"
-	if len(GetHits) > 0 && len(GetMisses) > 0 {
-		h, err := strconv.Atoi(GetHits)
-		if err != nil {
-			log.Fatal(err)
-		}
-		m, err := strconv.Atoi(GetMisses)
-		if err != nil {
-			log.Fatal(err)
-		}
-		GetRate = strconv.FormatFloat(float64(h) / float64(m+h) * 100, 'f', 1, 64)
+
+	h, err := strconv.Atoi(GetHits)
+	if err != nil {
+		log.Fatal(err)
 	}
+	m, err := strconv.Atoi(GetMisses)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if h != 0 || m != 0 {
+		GetRate = strconv.FormatFloat(float64(h)/float64(m+h)*100, 'f', 1, 64)
+	}
+
 	return StatsInfoStruct{
 		Pid:             statsMapper["pid"],
 		Version:         statsMapper["version"],

@@ -1,6 +1,6 @@
 {
     "instances":{
-        "ui0-Yii": {
+        "localhost-Yii": {
             "source": "localhost:11211",
             "middlemanName": "yii",
             "middlemanConfig": {

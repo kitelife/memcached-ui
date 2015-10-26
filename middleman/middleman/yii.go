@@ -1,15 +1,15 @@
 package middleman
 
 import (
-	"crypto/md5"
-	"fmt"
 	"bufio"
-	"strings"
+	"crypto/md5"
 	"encoding/json"
+	"fmt"
 	"hash/crc32"
+	"strings"
 
-	"github.com/picasso250/memcached-ui/middleman/manager"
-	"github.com/picasso250/memcached-ui/phpunserialize"
+	"github.com/youngsterxyf/memcached-ui/middleman/manager"
+	"github.com/youngsterxyf/memcached-ui/phpunserialize"
 )
 
 type YiiMiddleman struct {
@@ -40,9 +40,9 @@ func (ymm YiiMiddleman) UnserializeValue(value string) interface{} {
 		data = phpunserialize.Parse(bufio.NewReader(strings.NewReader(value)))
 		// Yii 模式下自动提取 JSON
 		arr, ok := data.([]interface{})
-		if (ok && len(arr) == 2) {
+		if ok && len(arr) == 2 {
 			mainstr, ok := arr[0].(string)
-			if (ok && len(mainstr) >= 2 && (mainstr[0] == '{' || mainstr[0] == '[')) {
+			if ok && len(mainstr) >= 2 && (mainstr[0] == '{' || mainstr[0] == '[') {
 				err := json.Unmarshal([]byte(mainstr), &(data.([]interface{})[0]))
 				if err != nil {
 					fmt.Println("error:", err)
