@@ -96,8 +96,9 @@ func statsMap2Struct(statsMapper map[string]string) StatsInfoStruct {
 		log.Fatal(err)
 	}
 
-	if h != 0 || m != 0 {
-		GetRate = strconv.FormatFloat(float64(h)/float64(m+h)*100, 'f', 1, 64)
+	GetCount := m + h
+	if GetCount > 0 {
+		GetRate = strconv.FormatFloat(float64(h)/float64(GetCount)*100, 'f', 1, 64)
 	}
 
 	return StatsInfoStruct{
