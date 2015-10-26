@@ -1,7 +1,7 @@
 {
     "instances":{
-        "localhost": {
-            "source": "127.0.0.1:11211",
+        "ui0-Yii": {
+            "source": "localhost:11211",
             "middlemanName": "yii",
             "middlemanConfig": {
                 "appName": "gxt",
