@@ -9,21 +9,22 @@
 package phpunserialize
 
 import (
-		"log"
-		"fmt"
-		"bufio"
-		"strings"
-		"strconv"
+	"bufio"
+	// "fmt"
+	"log"
+	"strconv"
+	"strings"
 )
 
 type ArrayItem struct {
-	key interface{}
+	key   interface{}
 	value interface{}
 }
+
 func parseArrayItem(reader *bufio.Reader) (ai ArrayItem) {
 	ai.key = Parse(reader)
 	ai.value = Parse(reader)
-	fmt.Printf("%q => %q\n", ai.key, ai.value)
+	// fmt.Printf("%q => %q\n", ai.key, ai.value)
 	return ai
 }
 func parseArrayBody(reader *bufio.Reader, arraylen uint64) (res interface{}) {
@@ -34,32 +35,32 @@ func parseArrayBody(reader *bufio.Reader, arraylen uint64) (res interface{}) {
 	var arr []interface{}
 	m := map[string]interface{}{}
 	switch t := t.(type) {
-		default:
-			fmt.Printf("unexpected type %T\n", t)     // %T prints whatever type t has
-			log.Fatal("unexpected type ", t)
-		case int64:
-			fmt.Printf("int64 %t\n", t)             // t has type int64
-			if (int(item.key.(int64)) != 0) {
-				log.Fatal("we do not support array not start with 0, but ", item.key)
+	default:
+		// fmt.Printf("unexpected type %T\n", t) // %T prints whatever type t has
+		log.Fatal("unexpected type ", t)
+	case int64:
+		// fmt.Printf("int64 %t\n", t) // t has type int64
+		if int(item.key.(int64)) != 0 {
+			log.Fatal("we do not support array not start with 0, but ", item.key)
+		}
+		arr = append(arr, item.value)
+		for i := 1; i < int(arraylen); i++ {
+			item = parseArrayItem(reader)
+			if int(item.key.(int64)) != i {
+				log.Fatal("we do not support that type array ", item.key, i)
 			}
 			arr = append(arr, item.value)
-			for i:=1; i < int(arraylen); i++ {
-				item = parseArrayItem(reader)
-				if int(item.key.(int64)) != i {
-					log.Fatal("we do not support that type array ", item.key, i)
-				}
-				arr = append(arr, item.value)
-			}
-			res = arr
-		case string:
-			fmt.Printf("string %d\n", t)             // t has type string
-			m[item.key.(string)] = item.value
-			for i:=1; i < int(arraylen); i++ {
-				item = parseArrayItem(reader)
-				k := item.key.(string)
-				m[k] = item.value
-			}
-			res = m
+		}
+		res = arr
+	case string:
+		// fmt.Printf("string %d\n", t) // t has type string
+		m[item.key.(string)] = item.value
+		for i := 1; i < int(arraylen); i++ {
+			item = parseArrayItem(reader)
+			k := item.key.(string)
+			m[k] = item.value
+		}
+		res = m
 	}
 
 	ReadByteEnsure(reader, '}')
@@ -77,7 +78,7 @@ func parseLen(reader *bufio.Reader) uint64 {
 	}
 	return ilen
 }
-func parseArray(reader *bufio.Reader) (interface{}) {
+func parseArray(reader *bufio.Reader) interface{} {
 	arraylen := parseLen(reader)
 	var res []interface{}
 	if arraylen == 0 {
@@ -115,7 +116,7 @@ func parseInt(reader *bufio.Reader) int64 {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("read int %d\n", i)
+	// fmt.Printf("read int %d\n", i)
 	return i
 }
 func parseFloat(reader *bufio.Reader) float64 {
@@ -139,7 +140,7 @@ func parseBool(reader *bufio.Reader) bool {
 	log.Fatal("bool can not be ", i)
 	return false
 }
-func ReadByteEnsure(reader *bufio.Reader, c byte) (error) {
+func ReadByteEnsure(reader *bufio.Reader, c byte) error {
 	// fmt.Printf("must be '%c'\n", c)
 	s, err := reader.ReadByte()
 	if err != nil {
@@ -148,7 +149,7 @@ func ReadByteEnsure(reader *bufio.Reader, c byte) (error) {
 	if s != c {
 		log.Fatal("not '", string(c), "', but ", string(s))
 	}
-	return nil;
+	return nil
 }
 func Parse(reader *bufio.Reader) (i interface{}) {
 	t, err := reader.ReadByte()
@@ -156,14 +157,14 @@ func Parse(reader *bufio.Reader) (i interface{}) {
 		log.Fatal(err)
 	}
 	if t == 'N' {
-		fmt.Printf("prepare to read Null\n")
+		// fmt.Printf("prepare to read Null\n")
 		err = ReadByteEnsure(reader, ';')
 		if err != nil {
 			log.Fatal(err)
 		}
 		return nil
 	} else {
-		fmt.Printf("type is %c\n", t)
+		// fmt.Printf("type is %c\n", t)
 		err = ReadByteEnsure(reader, ':')
 		if err != nil {
 			log.Fatal(err)
