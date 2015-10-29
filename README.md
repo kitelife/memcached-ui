@@ -21,6 +21,7 @@
 1. `go get github.com/youngsterxyf/memcached-ui`
 2. `cd $GOPATH/src/github.com/youngsterxyf/memcached-ui`
 3. `go build mu.go`
-4. `cp app.json.example app.json`，并根据需求修改配置信息
-5. `nohup ./mu > mu.log 2>&1 &`
-6. 访问 http://127.0.0.1:8080
+4. `bower install`
+5. `cp app.json.example app.json`，并根据需求修改配置信息
+6. `nohup ./mu > mu.log 2>&1 &`
+7. 访问 http://127.0.0.1:8080
