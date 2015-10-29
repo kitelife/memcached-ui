@@ -8,5 +8,10 @@
                 "hash": "yes"
             }
         }
+    },
+    "basic_auth": {
+        "on": "yes",
+        "username": "test",
+        "password": "test"
     }
 }

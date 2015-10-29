@@ -11,8 +11,15 @@ type InstanceConfig struct {
 	MiddlemanConfig map[string]string
 }
 
+type BasicAuthConfig struct {
+	On       string
+	Username string
+	Password string
+}
+
 type AppConfigStruct struct {
-	Instances map[string]InstanceConfig
+	Instances  map[string]InstanceConfig
+	Basic_auth BasicAuthConfig
 }
 
 func LoadAppConfig(configPath string) (conf AppConfigStruct, err error) {

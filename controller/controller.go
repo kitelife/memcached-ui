@@ -129,14 +129,18 @@ func Home(c *gin.Context) {
 	}
 	targetSource := ac.Instances[instanceID].Source
 
+	var structedStatsInfo StatsInfoStruct
+
 	infoErr := ""
 	hasInfoErr := false
 	statsInfo, err := getStatsInfo(targetSource)
 	if err != nil {
 		infoErr = err.Error()
 		hasInfoErr = true
+	} else {
+		structedStatsInfo = statsMap2Struct(statsInfo)
 	}
-	structedStatsInfo := statsMap2Struct(statsInfo)
+
 	structedStatsInfo.InstanceID = instanceID
 	structedStatsInfo.Source = targetSource
 

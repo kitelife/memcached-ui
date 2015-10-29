@@ -33,6 +33,10 @@ func main() {
 	r.LoadHTMLGlob("ui/templates/*")
 	r.Use(appConfigMiddleware(appConfig))
 
+	if appConfig.Basic_auth.On == "yes" {
+		r.Use(gin.BasicAuth(gin.Accounts{appConfig.Basic_auth.Username: appConfig.Basic_auth.Password}))
+	}
+
 	r.GET("/", controller.Home)
 	r.POST("/do", controller.Do)
 
