@@ -16,7 +16,7 @@ $(function(){
     } else {
       toShow = $resp.msg;
     }
-    $("#action_result").html('<label>结果</label>：' + toShow);
+    $("#action_result").html('<label>结果</label>：<pre>' + toShow + '</pre>');
   }
 
   var targetInstance = $("#target_instance").val();

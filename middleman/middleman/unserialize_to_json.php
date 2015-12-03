@@ -5,7 +5,7 @@ if ($argc < 2) {
 }
 
 $valueObj = unserialize($argv[1]);
-$encodedJSON = json_encode($valueObj);
+$encodedJSON = json_encode($valueObj, JSON_PRETTY_PRINT);
 
 if ($encodedJSON === false) {
     echo '';

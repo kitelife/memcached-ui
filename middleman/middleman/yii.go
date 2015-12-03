@@ -79,7 +79,7 @@ func (ymm YiiMiddleman) UnserializeValue(value string) interface{} {
 	if err != nil {
 		return err.Error()
 	}
-	return output
+	return string(output)
 }
 
 func init() {
