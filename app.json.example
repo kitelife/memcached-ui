@@ -5,7 +5,9 @@
             "middlemanName": "yii",
             "middlemanConfig": {
                 "appName": "gxt",
-                "hash": "yes"
+                "hash": "yes",
+                "php_bin": "php",
+                "unserialize_script": "./middleman/middleman/unserialize_to_json.php"
             }
         }
     },

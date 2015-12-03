@@ -1,15 +1,16 @@
 package middleman
 
 import (
-	"bufio"
+	//	"bufio"
 	"crypto/md5"
-	"encoding/json"
+	// "encoding/json"
 	"fmt"
 	"hash/crc32"
-	"strings"
+	//	"strings"
+	"os/exec"
 
 	"github.com/youngsterxyf/memcached-ui/middleman/manager"
-	"github.com/youngsterxyf/memcached-ui/phpunserialize"
+	//	"github.com/youngsterxyf/memcached-ui/phpunserialize"
 )
 
 type YiiMiddleman struct {
@@ -33,6 +34,7 @@ func (ymm YiiMiddleman) SerializeValue(value string) string {
 	return value
 }
 
+/*
 func (ymm YiiMiddleman) UnserializeValue(value string) interface{} {
 	var data interface{}
 	// 仅自动解析 PHP `serialize()`ed Array
@@ -53,6 +55,31 @@ func (ymm YiiMiddleman) UnserializeValue(value string) interface{} {
 		data = (value)
 	}
 	return data
+}
+*/
+
+/*
+这个插件还需要两个配置项：
+1. php_bin：php二进制文件的路径
+2. unserialize_script：用于反序列化的php脚本的路径
+*/
+
+func (ymm YiiMiddleman) UnserializeValue(value string) interface{} {
+	phpBin, ok := ymm.config["php_bin"]
+	if ok == false {
+		phpBin = "php"
+	}
+	unserializeScript, ok := ymm.config["unserialize_script"]
+	if ok == false {
+		unserializeScript = "./middleman/middleman/unserialize_to_json.php"
+	}
+
+	unserializeCMD := exec.Command(phpBin, unserializeScript, value)
+	output, err := unserializeCMD.Output()
+	if err != nil {
+		return err.Error()
+	}
+	return output
 }
 
 func init() {
