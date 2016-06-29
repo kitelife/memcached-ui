@@ -2,3 +2,5 @@ ui/assets/lib/
 Godeps/_workspace/
 *.exe
 app.json
+memcached-ui
+mu

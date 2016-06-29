@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -118,14 +119,19 @@ func statsMap2Struct(statsMapper map[string]string) StatsInfoStruct {
 func Home(c *gin.Context) {
 	ac := getAppConfig(c)
 
-	hostPortList := make([]string, 0, 100)
+	var instances []string
 	for k, _ := range ac.Instances {
-		hostPortList = append(hostPortList, k)
+		instances = append(instances, k)
 	}
+	// sort hosts to fix issue:
+	// 10.2.96.13
+	// 10.2.96.130
+	// 10.2.96.14
+	sort.Sort(Hosts(instances))
 
 	instanceID := c.Query("instance")
 	if _, ok := ac.Instances[instanceID]; ok == false {
-		instanceID = hostPortList[0]
+		instanceID = instances[0]
 	}
 	targetSource := ac.Instances[instanceID].Source
 
@@ -147,7 +153,7 @@ func Home(c *gin.Context) {
 	c.HTML(http.StatusOK, "index.html", gin.H{
 		"HasInfoErr": hasInfoErr,
 		"InfoErr":    infoErr,
-		"Instances":  ac.Instances,
+		"Instances":  instances,
 		"StatsInfo":  structedStatsInfo,
 	})
 }
