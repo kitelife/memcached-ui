@@ -1,0 +1,13 @@
+instances:
+  localhost-Yii:
+    source: localhost:11211
+    middelman_name: yii
+    middleman_config:
+      appName: gxt
+      hash: yes
+      php_bin: php
+      unserialize_script: ./middleman/middleman/unserialize_to_json.php
+basic_auth:
+  "on": true
+  username: test
+  password: test
