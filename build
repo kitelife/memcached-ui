@@ -1,0 +1,15 @@
+#!/bin/bash -e
+
+pwd=$PWD
+export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
+
+eval $(go env)
+
+GIT_SHA=`git rev-parse --short HEAD || echo "GitNotFound"`
+GIT_BRANCH=`git branch 2>/dev/null | grep "^\*" | sed -e "s/^\*\ //"`
+if [ "${GIT_BRANCH}" != "" ]; then
+    GIT_SHA=$GIT_SHA"($GIT_BRANCH)"
+fi
+WHEN=`date '+%Y-%m-%d_%H:%M:%S'`
+
+CGO_ENABLED=0 go build -installsuffix -a -v -ldflags "-X main.GitSHA=${GIT_SHA} -X main.BuildTime=${WHEN}" -o mu 
