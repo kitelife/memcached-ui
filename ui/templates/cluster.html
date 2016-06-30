@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Memcached UI</title>
+
+    <link rel="stylesheet" href="/assets/lib/bootstrap/dist/css/bootstrap.min.css">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
+<body>
+  <div class="container">
+    <nav class="navbar navbar-inverse">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="/">Memcached UI</a>
+        </div>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+          <li class="active"><a href="/cluster">Cluster</a></li>
+          <li><a href="/node">Node</a></li>
+          </ul>
+          <ul class="nav navbar-nav navbar-right">
+            <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+              切换服务器 <span class="caret"></span>
+              </a>
+              <ul class="dropdown-menu">
+                {{range $k := .Instances}}
+                <li><a href="/node?instance={{$k}}">{{$k}}</a></li>
+                {{end}}
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    {{range $err := .InfoErrs}}
+    <div class="alert alert-danger" role="alert" style="text-align: center; font-size: 16px;">{{$err}}</div>
+    {{end}}
+    <div class="row">
+      {{range $stat := .StatsInfos}}
+      <div class="col-md-3">
+        <div class="panel panel-primary">
+          <div class="panel-heading" onclick="window.location.href='/node?instance={{$stat.InstanceID}}';return false">
+          {{$stat.InstanceID}} 概况
+          </div>
+          <div class="panel-body">
+            <div class="container-fluid">
+              <div><label>服务器</label>：{{$stat.Source}}</div>
+              <div><label>进程号</label>：{{$stat.Pid}} (v{{$stat.Version}})</div>
+              <div><label>连接数</label>：{{$stat.CurrConnections}}</div>
+              <div><label>运行时长</label>：{{$stat.Uptime}}</div>
+              <div><label>内存</label>：{{$stat.CurrMemoryUsage}} / {{$stat.MaxMemoryLimit}}</div>
+              <div><label>内容数</label>：{{$stat.CurrItems}}</div>
+              <div><label>GET命中数</label>：{{$stat.GetHits}}</div>
+              <div><label>GET未命中数</label>：{{$stat.GetMisses}}</div>
+              <div><label>GET命中率</label>：{{$stat.GetRate}}%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {{end}}
+    </div>
+  </div>
+  <div id="action_result"></div>
+<script src="/assets/lib/jquery/dist/jquery.min.js"></script>
+<script src="/assets/lib/bootstrap/dist/js/bootstrap.min.js"></script>
+<script src="/assets/lib/vue/dist/vue.min.js"></script>
+<script src="/assets/index.js"></script>
+</body>
+</html>

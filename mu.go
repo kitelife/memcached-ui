@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	VERSION = "0.1.0"
+	VERSION = "0.2.0"
 	APPNAME = "memcached-ui"
 )
 
@@ -77,6 +77,8 @@ func main() {
 	}
 
 	r.GET("/", controller.Home)
+	r.GET("/node", controller.Node)
+	r.GET("/cluster", controller.Cluster)
 	r.POST("/do", controller.Do)
 
 	r.Run(listen)
