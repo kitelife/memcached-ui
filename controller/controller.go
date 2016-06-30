@@ -74,9 +74,7 @@ func formatUptime(uptime int) string {
 }
 
 func formatMemoryUsage(usageBytes int) string {
-	usageKB := float32(usageBytes) / float32(1024)
-	usageMB := usageKB / float32(1024)
-	return fmt.Sprintf("%.2fMB (%.2fKB)", usageMB, usageKB)
+	return ToHuman(int64(usageBytes))
 }
 
 func statsMap2Struct(statsMapper map[string]string) StatsInfoStruct {
@@ -117,6 +115,10 @@ func statsMap2Struct(statsMapper map[string]string) StatsInfoStruct {
 }
 
 func Home(c *gin.Context) {
+	c.Redirect(http.StatusMovedPermanently, "/cluster")
+}
+
+func Node(c *gin.Context) {
 	ac := getAppConfig(c)
 
 	var instances []string
@@ -150,11 +152,48 @@ func Home(c *gin.Context) {
 	structedStatsInfo.InstanceID = instanceID
 	structedStatsInfo.Source = targetSource
 
-	c.HTML(http.StatusOK, "index.html", gin.H{
+	c.HTML(http.StatusOK, "node.html", gin.H{
 		"HasInfoErr": hasInfoErr,
 		"InfoErr":    infoErr,
 		"Instances":  instances,
 		"StatsInfo":  structedStatsInfo,
+	})
+}
+
+func Cluster(c *gin.Context) {
+	ac := getAppConfig(c)
+
+	var infoErrs []string
+	var instances []string
+	statsInofMap := make(map[string]StatsInfoStruct)
+	for k, instance := range ac.Instances {
+		instances = append(instances, k)
+
+		var structedStatsInfo StatsInfoStruct
+		statsInfo, err := getStatsInfo(instance.Source)
+		if err != nil {
+			infoErrs = append(infoErrs, err.Error())
+		} else {
+			structedStatsInfo = statsMap2Struct(statsInfo)
+		}
+
+		structedStatsInfo.InstanceID = k
+		structedStatsInfo.Source = instance.Source
+
+		statsInofMap[k] = structedStatsInfo
+	}
+	sort.Sort(Hosts(instances))
+
+	var statsInofs []StatsInfoStruct
+	for _, k := range instances {
+		statInfo := statsInofMap[k]
+		statsInofs = append(statsInofs, statInfo)
+	}
+
+	c.HTML(http.StatusOK, "cluster.html", gin.H{
+		"InfoErrs":   infoErrs,
+		"Instances":  instances,
+		"StatsInfos": statsInofs,
 	})
 }
 
