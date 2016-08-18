@@ -8,7 +8,7 @@ import (
 
 type InstanceConfig struct {
 	Source          string            `yaml:"source"`
-	MiddlemanName   string            `yaml:"middelman_name"`
+	MiddlemanName   string            `yaml:"middleman_name"`
 	MiddlemanConfig map[string]string `yaml:"middleman_config"`
 }
 
